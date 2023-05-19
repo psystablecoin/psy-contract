@@ -36,14 +36,12 @@ contract('CommunityIssuance', async (accounts) => {
       await contracts.adminContract.addNewCollateral(
         contracts.stabilityPoolTemplate.address,
         ZERO_ADDRESS,
-        ZERO_ADDRESS,
         '0',
         0,
         0
       )
       await contracts.adminContract.addNewCollateral(
         contracts.stabilityPoolTemplateV2.address,
-        ZERO_ADDRESS,
         ZERO_ADDRESS,
         '0',
         0,

@@ -71,7 +71,6 @@ contract('AdminContract', async (accounts) => {
         adminContract.addNewCollateral(
           stabilityPoolV1.address,
           ZERO_ADDRESS,
-          ZERO_ADDRESS,
           dec(100, 18),
           dec(1, 18),
           14,
@@ -82,13 +81,13 @@ contract('AdminContract', async (accounts) => {
 
     it('AddNewCollateral: As Owner - Invalid StabilityPool Template then reverts', async () => {
       await assertRevert(
-        adminContract.addNewCollateral(ZERO_ADDRESS, ZERO_ADDRESS, ZERO_ADDRESS, dec(100, 18), dec(1, 18), 14)
+        adminContract.addNewCollateral(ZERO_ADDRESS, ZERO_ADDRESS, dec(100, 18), dec(1, 18), 14)
       )
     })
 
     it('AddNewCollateral: As Owner - Stability Pool exists, then reverts', async () => {
       await assertRevert(
-        adminContract.addNewCollateral(stabilityPoolV1.address, ZERO_ADDRESS, ZERO_ADDRESS, 0, dec(1, 18), 14)
+        adminContract.addNewCollateral(stabilityPoolV1.address, ZERO_ADDRESS, 0, dec(1, 18), 14)
       )
     })
 
@@ -96,7 +95,6 @@ contract('AdminContract', async (accounts) => {
       await adminContract.addNewCollateral(
         stabilityPoolV3.address,
         fakeOracle,
-        fakeIndex,
         dec(100, 18),
         dec(1, 18),
         14
@@ -104,8 +102,7 @@ contract('AdminContract', async (accounts) => {
 
       dataOracle = await contracts.priceFeedTestnet.oracles(slsdToken.address)
       assert.equal(dataOracle[0], fakeOracle)
-      assert.equal(dataOracle[1], fakeIndex)
-      assert.equal(dataOracle[2], true)
+      assert.equal(dataOracle[1], true)
 
       assert.notEqual((await contracts.psyParameters.redemptionBlock(slsdToken.address)).toString(), 0)
       assert.notEqual(await stabilityPoolManager.unsafeGetAssetStabilityPool(slsdToken.address), ZERO_ADDRESS)

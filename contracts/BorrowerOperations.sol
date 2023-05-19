@@ -215,7 +215,6 @@ contract BorrowerOperations is PSYBase, CheckContract, IBorrowerOperations, Init
 
 		_requireAtLeastMinNetDebt(vars.asset, vars.netDebt);
 
-
 		// ICR is based on the composite debt, i.e. the requested SLSD amount + SLSD borrowing fee + SLSD gas comp.
 		vars.compositeDebt = _getCompositeDebt(vars.asset, vars.netDebt);
 		assert(vars.compositeDebt > 0);

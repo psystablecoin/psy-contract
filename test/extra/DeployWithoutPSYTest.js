@@ -317,7 +317,6 @@ contract('Deploy and operation tests when PSY token is launched later', async (a
         await contracts.adminContract.addNewCollateral(
             contracts.stabilityPoolTemplate.address,
             ZERO_ADDRESS,
-            ZERO_ADDRESS,
             0,
             0,
             0
@@ -325,7 +324,6 @@ contract('Deploy and operation tests when PSY token is launched later', async (a
         
         await contracts.adminContract.addNewCollateral(
             contracts.stabilityPoolTemplateV2.address,
-            ZERO_ADDRESS,
             ZERO_ADDRESS,
             0,
             0,
@@ -441,7 +439,6 @@ contract('Deploy and operation tests when PSY token is launched later', async (a
         await adminContract.addNewCollateral(
             stabilityPoolV3.address,
             fakeOracle,
-            fakeIndex,
             dec(100, 18),
             dec(1, 18),
             14
@@ -449,8 +446,7 @@ contract('Deploy and operation tests when PSY token is launched later', async (a
 
         dataOracle = await contracts.priceFeedTestnet.oracles(slsdToken.address)
         assert.equal(dataOracle[0], fakeOracle)
-        assert.equal(dataOracle[1], fakeIndex)
-        assert.equal(dataOracle[2], true)
+        assert.equal(dataOracle[1], true)
 
         assert.notEqual((await contracts.psyParameters.redemptionBlock(slsdToken.address)).toString(), 0)
         assert.notEqual(await stabilityPoolManager.unsafeGetAssetStabilityPool(slsdToken.address), ZERO_ADDRESS)
@@ -617,7 +613,6 @@ contract('Deploy and operation tests when PSY token is launched later', async (a
         await contracts.adminContract.addNewCollateral(
             contracts.stabilityPoolTemplate.address,
             ZERO_ADDRESS,
-            ZERO_ADDRESS,
             0,
             0,
             0
@@ -625,7 +620,6 @@ contract('Deploy and operation tests when PSY token is launched later', async (a
 
         await contracts.adminContract.addNewCollateral(
             contracts.stabilityPoolTemplateV2.address,
-            ZERO_ADDRESS,
             ZERO_ADDRESS,
             0,
             0,

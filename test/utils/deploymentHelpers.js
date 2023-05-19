@@ -460,7 +460,6 @@ class DeploymentHelper {
     await coreContracts.adminContract.addNewCollateral(
       coreContracts.stabilityPoolTemplate.address,
       ZERO_ADDRESS,
-      ZERO_ADDRESS,
       supply,
       weeklyReward,
       0,
@@ -469,7 +468,6 @@ class DeploymentHelper {
     await PSYContracts.psyToken.unprotectedMint(treasurySig, supply)
     await coreContracts.adminContract.addNewCollateral(
       coreContracts.stabilityPoolTemplateV2.address,
-      ZERO_ADDRESS,
       ZERO_ADDRESS,
       supply,
       weeklyReward,

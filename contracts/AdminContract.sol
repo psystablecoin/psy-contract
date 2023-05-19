@@ -69,8 +69,7 @@ contract AdminContract is Ownable, Initializable {
 	//Needs to approve Community Issuance to use this function.
 	function addNewCollateral(
 		address _stabilityPoolProxyAddress,
-		address _chainlinkOracle,
-		address _chainlinkIndex,
+		address _oracle,
 		uint256 assignedToken,
 		uint256 _tokenPerWeekDistributed,
 		uint256 redemptionLockInDay
@@ -82,7 +81,7 @@ contract AdminContract is Ownable, Initializable {
 			"This collateral already exists"
 		);
 		
-		psyParameters.priceFeed().addOracle(_asset, _chainlinkOracle, _chainlinkIndex);
+		psyParameters.priceFeed().addOracle(_asset, _oracle);
 		psyParameters.setAsDefaultWithRemptionBlock(_asset, redemptionLockInDay);
 		
 		stabilityPoolManager.addStabilityPool(_asset, _stabilityPoolProxyAddress);

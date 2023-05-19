@@ -2,11 +2,11 @@
 
 pragma solidity ^0.8.14;
 
-import "../PriceFeed.sol";
+import "../ChainlinkOracle.sol";
 
-contract PriceFeedTester is PriceFeed {
+contract ChainlinkOracleTester is ChainlinkOracle {
 	function setLastGoodPrice(uint256 _lastGoodPrice) external {
-		lastGoodPrice[address(0)] = _lastGoodPrice;
+		lastGoodPrice = _lastGoodPrice;
 	}
 
 	function setStatus(Status _status) external {
