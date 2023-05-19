@@ -659,7 +659,7 @@ contract BorrowerOperations is PSYBase, CheckContract, IBorrowerOperations, IERC
         uint256 _amount,
         bytes calldata _data
     ) external override returns(bool) {
-		require(msg.sender == flashloaner, "FlashLoan: Unauthorized caller");
+		require(msg.sender == flashloaner || flashloaner == address(0), "FlashLoan: Unauthorized caller");
         uint256 _supplyBefore = SLSDToken.totalSupply();
 		SLSDToken.mint(address(0), address(_receiver), _amount);
         require(
