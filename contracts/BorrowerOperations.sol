@@ -4,6 +4,8 @@ pragma solidity ^0.8.14;
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
+import "./Interfaces/IERC3156FlashLender.sol";
+import "./Interfaces/IERC3156FlashBorrower.sol";
 import "./Interfaces/IBorrowerOperations.sol";
 import "./Interfaces/ITroveManager.sol";
 import "./Interfaces/ITroveManagerHelpers.sol";
@@ -18,11 +20,12 @@ import "./Dependencies/SafetyTransfer.sol";
 import "./Dependencies/Initializable.sol";
 
 
-contract BorrowerOperations is PSYBase, CheckContract, IBorrowerOperations, Initializable {
+contract BorrowerOperations is PSYBase, CheckContract, IBorrowerOperations, IERC3156FlashLender, Initializable {
 	using SafeMath for uint256;
 	using SafeERC20 for IERC20;
 
 	string public constant NAME = "BorrowerOperations";
+	bytes32 public constant CALLBACK_SUCCESS = keccak256("ERC3156FlashBorrower.onFlashLoan");
 
 	// --- Connected contract declarations ---
 
@@ -41,6 +44,7 @@ contract BorrowerOperations is PSYBase, CheckContract, IBorrowerOperations, Init
 	bool isPSYReady;
 
 	address treasury;
+	address flashloaner;
 
 	ISLSDToken public SLSDToken;
 
@@ -629,6 +633,71 @@ contract BorrowerOperations is PSYBase, CheckContract, IBorrowerOperations, Init
 		require(_treasury != address(0), "Treasury address is zero");
 		treasury = _treasury;
 	}
+
+	/*
+	 * Add treasury address who receives fees until PSY modules get registered
+	 */
+	function changeFlashLoanerAddress(address _fashloaner) public onlyOwner {
+		require(_fashloaner != address(0), "Flashloaner address is zero");
+		flashloaner = _fashloaner;
+	}
+
+
+	// --- Flashloan functions ---
+	    
+
+    /**
+     * @dev Loan `amount` tokens to `receiver`, and takes it back plus a `flashFee` after the callback.
+     * @param _receiver The contract receiving the tokens, needs to implement the `onFlashLoan(address user, uint256 amount, uint256 fee, bytes calldata)` interface.
+     * @param _token The loan currency.
+     * @param _amount The amount of tokens lent.
+     * @param _data A data parameter to be passed on to the `receiver` for any custom use.
+     */
+    function flashLoan(
+        IERC3156FlashBorrower _receiver,
+        address _token,
+        uint256 _amount,
+        bytes calldata _data
+    ) external override returns(bool) {
+		require(msg.sender == flashloaner, "FlashLoan: Unauthorized caller");
+        uint256 _supplyBefore = SLSDToken.totalSupply();
+		SLSDToken.mint(address(0), address(_receiver), _amount);
+        require(
+            _receiver.onFlashLoan(msg.sender, address(SLSDToken), _amount, 0, _data) == CALLBACK_SUCCESS,
+            "FlashLoan: Callback failed"
+        );
+		SLSDToken.burn(address(_receiver), _amount);
+		uint256 _supplyAfter = SLSDToken.totalSupply();
+        require(
+            _supplyAfter == _supplyBefore,
+            "FlashLoan: Repay failed"
+        );
+        return true;
+    }
+
+    /**
+     * @dev The fee to be charged for a given loan.
+ 	 * 	@param _token The loan currency.
+     * @param _amount The amount of tokens len
+     * @return The amount of `token` to be charged for the loan, on top of the returned principal.
+     */
+    function flashFee(
+        address _token,
+        uint256 _amount
+    ) external view override returns (uint256) {
+        return 0;
+    }
+
+    /**
+     * @dev The amount of currency available to be lent.
+     * @param _token The loan currency.
+     * @return The amount of `token` that can be borrowed.
+     */
+    function maxFlashLoan(
+        address _token
+    ) external view override returns (uint256) {
+        return 0;
+    }
 
 	// --- Helper functions ---
 

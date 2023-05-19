@@ -789,7 +789,7 @@ class TestHelper {
     }
 
     if (ICR) {
-      const price = await contracts.priceFeedTestnet.getPrice()
+      const price = await contracts.priceFeedTestnet.getDirectPrice(asset)
       assetSent = ICR.mul(totalDebt).div(price)
 
       if (asset == this.ZERO_ADDRESS) {
