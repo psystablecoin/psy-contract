@@ -1,4 +1,4 @@
-const { mainnetDeploy } = require('./mainnetDeployment.js')
+const { mainnetDeploy } = require('./testnetDeployment.js')
 const configParams = require("../deploymentParams/deploymentParams.sepolia.js")
 
 async function main() {

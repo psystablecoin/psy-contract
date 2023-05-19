@@ -56,16 +56,17 @@ module.exports = {
   networks: {
     hardhat: {
       allowUnlimitedContractSize: true,
-      accounts: accountsList,// [{privateKey:getSecret('GOERLI_DEPLOYER_PRIVATEKEY'),balance: "10000000000000000000000000"}],
+      //accounts: accountsList, 
+      accounts: [{privateKey:getSecret('GOERLI_DEPLOYER_PRIVATEKEY'),balance: "10000000000000000000000000"}],
       initialBaseFeePerGas: 0,
-      //   gas: 100000000, // tx gas limit
-      //   blockGasLimit: 150000000,
-      //   gasPrice: 20000000000,
-      //hardfork: 'london',
-      //forking: {
-      //  url: infuraSepoliaUrl(),
-      //},
-      timeout: 12000000
+      gas: 100000000, // tx gas limit
+      blockGasLimit: 150000000,
+      gasPrice: 20000000000,
+      hardfork: 'london',
+      forking: {
+        url: infuraSepoliaUrl(),
+      },
+      timeout: 120000000
     },
 
     localhost: {

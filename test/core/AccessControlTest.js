@@ -43,6 +43,7 @@ contract(
       coreContracts = await deploymentHelper.deployLiquityCore()
       coreContracts.troveManager = await TroveManagerTester.new()
       coreContracts = await deploymentHelper.deploySLSDToken(coreContracts)
+
       const PSYContracts = await deploymentHelper.deployPSYContractsHardhat(treasury)
 
       priceFeed = coreContracts.priceFeed

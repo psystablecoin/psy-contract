@@ -47,7 +47,7 @@ contract('PSYParameters', async (accounts) => {
   const MIN_NET_DEBT_SAFETY_MAX = toBN(dec(10000, 18))
   const MIN_NET_DEBT_SAFETY_MIN = toBN(1)
 
-  const REDEMPTION_FEE_FLOOR_SAFETY_MAX = toBN(1000)
+  const REDEMPTION_FEE_FLOOR_SAFETY_MAX = toBN(1000) // max 10%
   const REDEMPTION_FEE_FLOOR_SAFETY_MIN = toBN(10)
 
   const openTrove = async (params) => th.openTrove(contracts, params)

@@ -26,8 +26,7 @@ module.exports = {
     "Dependencies/IERC2612.sol",
     "Dependencies/Math.sol",
     "Dependencies/SafeMath.sol",
-    "Dependencies/SafeMath128.sol",
-    "Dependencies/console.sol",
+    "Dependencies/SafeMath128.sol"
   ],
   // https://github.com/sc-forks/solidity-coverage/blob/master/docs/advanced.md#skipping-tests
   mocha: {

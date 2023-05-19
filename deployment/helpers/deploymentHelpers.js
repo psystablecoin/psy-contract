@@ -73,6 +73,12 @@ class DeploymentHelper {
     const erc20Mock = await this.loadOrDeploy(ERC20MockFactory, name, deploymentState, false, [name, name, decimals])
 
     await erc20Mock.mint(this.deployerWallet.address, "100000".concat("0".repeat(decimals)));
+    
+    if (!this.configParams.ETHERSCAN_BASE_URL) {
+      console.log('No Etherscan Url defined, skipping verification')
+    } else {
+      await this.verifyContract(name, deploymentState, [name, name, decimals])
+    }
 
     return erc20Mock.address
   }
@@ -136,7 +142,7 @@ class DeploymentHelper {
 
   async deployslsdCoreMainnet(deploymentState, multisig) {
     // Get contract factories
-    const priceFeedFactory = await this.getFactory("PriceFeed")
+    const priceFeedFactory = await this.getFactory("PriceFeedTestnet")
     const sortedTrovesFactory = await this.getFactory("SortedTroves")
     const troveManagerFactory = await this.getFactory("TroveManager")
     const troveManagerHelpersFactory = await this.getFactory("TroveManagerHelpers")
