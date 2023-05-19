@@ -37,15 +37,17 @@ contract PSYParameters is IPSYParameters, Ownable, CheckContract, Initializable 
 	mapping(address => uint256) public override BORROWING_FEE_FLOOR;
 	mapping(address => uint256) public override REDEMPTION_FEE_FLOOR;
 	mapping(address => uint256) public override MAX_BORROWING_FEE;
+	mapping(address => uint256) public override MAX_REDEMPTION_FEE;
 	mapping(address => uint256) public override redemptionBlock;
 
 	mapping(address => bool) internal hasCollateralConfigured;
 
 	IActivePool public override activePool;
+	
 	IDefaultPool public override defaultPool;
 	IPriceFeed public override priceFeed;
 	address public adminContract;
-
+	
 	bool public isInitialized;
 
 	modifier isController() {
@@ -120,6 +122,7 @@ contract PSYParameters is IPSYParameters, Ownable, CheckContract, Initializable 
 		PERCENT_DIVISOR[_asset] = PERCENT_DIVISOR_DEFAULT;
 		BORROWING_FEE_FLOOR[_asset] = BORROWING_FEE_FLOOR_DEFAULT;
 		MAX_BORROWING_FEE[_asset] = MAX_BORROWING_FEE_DEFAULT;
+		MAX_REDEMPTION_FEE[_asset] = DECIMAL_PRECISION;
 		REDEMPTION_FEE_FLOOR[_asset] = REDEMPTION_FEE_FLOOR_DEFAULT;
 	}
 
@@ -240,13 +243,30 @@ contract PSYParameters is IPSYParameters, Ownable, CheckContract, Initializable 
 		public
 		override
 		onlyOwner
-		safeCheck("Redemption Fee Floor", _asset, redemptionFeeFloor, 10, 1000) /// 0.10% - 10%
+		safeCheck("Redemption Fee Floor", _asset, redemptionFeeFloor, 0, 1000) /// 0% - 10%
 	{
 		uint256 oldRedemptionFeeFloor = REDEMPTION_FEE_FLOOR[_asset];
 		uint256 newRedemptionFeeFloor = (DECIMAL_PRECISION / 10000) * redemptionFeeFloor;
 
 		REDEMPTION_FEE_FLOOR[_asset] = newRedemptionFeeFloor;
+		require(MAX_REDEMPTION_FEE[_asset] > REDEMPTION_FEE_FLOOR[_asset], "Wrong inputs");
+
 		emit RedemptionFeeFloorChanged(oldRedemptionFeeFloor, newRedemptionFeeFloor);
+	}
+
+	function setMaxRedemptionFee(address _asset, uint256 maxRedemptionFee)
+		public
+		override
+		onlyOwner
+		safeCheck("Max Redemption Fee", _asset, maxRedemptionFee, 0, 10000) /// 0% - 100%
+	{
+		uint256 oldMaxRedemptionFee = MAX_REDEMPTION_FEE[_asset];
+		uint256 newMaxRedemptionFee = (DECIMAL_PRECISION / 10000) * maxRedemptionFee;
+
+		MAX_REDEMPTION_FEE[_asset] = newMaxRedemptionFee;
+		require(MAX_REDEMPTION_FEE[_asset] > REDEMPTION_FEE_FLOOR[_asset], "Wrong inputs");
+
+		emit MaxRedemptionFeeChanged(oldMaxRedemptionFee, maxRedemptionFee);
 	}
 
 	function removeRedemptionBlock(address _asset) external override onlyOwner {

@@ -385,7 +385,7 @@ contract TroveManager is PSYBase, CheckContract, Initializable, ITroveManager {
 	}
 
 	/*
-	 *  Get its offset coll/debt and ETH gas comp, and close the trove.
+	  *  Get its offset coll/debt and ETH gas comp, and close the trove.
 	 */
 	function _getCappedOffsetVals(
 		address _asset,

@@ -24,6 +24,10 @@ interface IPSYParameters {
 		uint256 oldRedemptionFeeFloor,
 		uint256 newRedemptionFeeFloor
 	);
+	event MaxRedemptionFeeChanged(
+		uint256 oldMaxRedemptionFee,
+		uint256 newMaxRedemptionFee
+	);
 	event RedemptionBlockRemoved(address _asset);
 	event PriceFeedChanged(address indexed addr);
 
@@ -48,6 +52,8 @@ interface IPSYParameters {
 	function REDEMPTION_FEE_FLOOR(address _collateral) external view returns (uint256);
 
 	function MAX_BORROWING_FEE(address _collateral) external view returns (uint256);
+
+	function MAX_REDEMPTION_FEE(address _collateral) external view returns (uint256);
 
 	function redemptionBlock(address _collateral) external view returns (uint256);
 
@@ -87,6 +93,8 @@ interface IPSYParameters {
 	function setMaxBorrowingFee(address _asset, uint256 maxBorrowingFee) external;
 
 	function setRedemptionFeeFloor(address _asset, uint256 redemptionFeeFloor) external;
+
+	function setMaxRedemptionFee(address _asset, uint256 maxRedemptionFee) external;
 
 	function removeRedemptionBlock(address _asset) external;
 }

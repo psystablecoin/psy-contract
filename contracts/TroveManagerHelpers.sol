@@ -639,7 +639,7 @@ contract TroveManagerHelpers is
 		return
 			PSYMath._min(
 				psyParams.REDEMPTION_FEE_FLOOR(_asset).add(_baseRate),
-				DECIMAL_PRECISION
+				psyParams.MAX_REDEMPTION_FEE(_asset)
 			);
 	}
 
