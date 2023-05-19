@@ -28,6 +28,8 @@ contract TroveManager is PSYBase, CheckContract, Initializable, ITroveManager {
 
 	bool isPSYReady;
 
+	address treasury;
+
 	// A doubly linked list of Troves, sorted by their sorted by their collateral ratios
 	ISortedTroves public sortedTroves;
 
@@ -55,6 +57,7 @@ contract TroveManager is PSYBase, CheckContract, Initializable, ITroveManager {
 		address _slsdTokenAddress,
 		address _sortedTrovesAddress,
 		address _psyStakingAddress,
+		address _treasury,
 		address _psyParamsAddress,
 		address _troveManagerHelpersAddress
 	) external override initializer onlyOwner {
@@ -80,6 +83,8 @@ contract TroveManager is PSYBase, CheckContract, Initializable, ITroveManager {
 			checkContract(_psyStakingAddress);
 			psyStaking = IPSYStaking(_psyStakingAddress);
 			isPSYReady = true;
+		} else {
+			changeTreasuryAddress(_treasury);
 		}
 		
 		setPSYParameters(_psyParamsAddress);
@@ -1177,7 +1182,7 @@ contract TroveManager is PSYBase, CheckContract, Initializable, ITroveManager {
 			currentBorrower = nextUserToCheck;
 		}
 		require(totals.totalAssetDrawn > 0, "UR");
-
+		
 		// Decay the baseRate due to time passed, and then increase it according to the size of this redemption.
 		// Use the saved total SLSD supply value, from before it was reduced by the redemption.
 		troveManagerHelpers.updateBaseRateFromRedemption(
@@ -1187,12 +1192,12 @@ contract TroveManager is PSYBase, CheckContract, Initializable, ITroveManager {
 			totals.totalSLSDSupplyAtStart
 		);
 
-		// Calculate the ETH fee
+		
+		// Calculate the ETH fee	
 		totals.ETHFee = troveManagerHelpers._getRedemptionFee(_asset, totals.totalAssetDrawn);
-
 		_requireUserAcceptsFee(totals.ETHFee, totals.totalAssetDrawn, _maxFeePercentage);
-
-		if (isPSYReady) {
+		
+		if (isPSYReady) {	
 			// Send the ETH fee to the PSY staking contract
 			contractsCache.activePool.sendAsset(
 				_asset,
@@ -1200,6 +1205,12 @@ contract TroveManager is PSYBase, CheckContract, Initializable, ITroveManager {
 				totals.ETHFee
 			);
 			contractsCache.psyStaking.increaseF_Asset(_asset, totals.ETHFee);
+		} else {
+			contractsCache.activePool.sendAsset(
+				_asset,
+				treasury,
+				totals.ETHFee
+			);
 		}
 		
 		totals.ETHToSendToRedeemer = totals.totalAssetDrawn.sub(totals.ETHFee);
@@ -1226,5 +1237,13 @@ contract TroveManager is PSYBase, CheckContract, Initializable, ITroveManager {
 		require(!isPSYReady,"PSY modules already registered");
 		psyStaking = IPSYStaking(_PSYStakingAddress);
 		isPSYReady = true;
+	}
+
+	/*
+	 * Add treasury address who receives fees until PSY modules get registered
+	 */
+	function changeTreasuryAddress(address _treasury) public onlyOwner {
+		require(_treasury != address(0), "Treasury address is zero");
+		treasury = _treasury;
 	}
 }

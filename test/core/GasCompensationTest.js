@@ -90,7 +90,7 @@ contract('Gas compensation tests', async (accounts) => {
     await deploymentHelper.connectCoreContracts(contracts, PSYContracts)
     await deploymentHelper.connectPSYContractsToCore(PSYContracts, contracts)
 
-    contracts.troveManager.setPSYParameters(contracts.dfrancParameters.address)
+    contracts.troveManager.setPSYParameters(contracts.psyParameters.address)
 
     stabilityPool = await StabilityPool.at(
       await contracts.stabilityPoolManager.getAssetStabilityPool(ZERO_ADDRESS)

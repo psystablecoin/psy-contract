@@ -27,8 +27,8 @@ contract('StabilityPool', async (accounts) => {
     stabilityPool = await StabilityPool.new()
     const mockCommunityIssuance = (await CommunityIssuance.new()).address
     const dumbContractAddress = (await NonPayable.new()).address
-    const dfrancParameters = await PSYParameters.new()
-    await dfrancParameters.sanitizeParameters(ZERO_ADDRESS)
+    const psyParameters = await PSYParameters.new()
+    await psyParameters.sanitizeParameters(ZERO_ADDRESS)
     await stabilityPool.setAddresses(
       ZERO_ADDRESS,
       dumbContractAddress,
@@ -37,7 +37,7 @@ contract('StabilityPool', async (accounts) => {
       dumbContractAddress,
       dumbContractAddress,
       mockCommunityIssuance,
-      dfrancParameters.address
+      psyParameters.address
     )
   })
 

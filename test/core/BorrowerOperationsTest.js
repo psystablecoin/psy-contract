@@ -38,7 +38,7 @@ contract('BorrowerOperations', async (accounts) => {
   let borrowerOperations
   let psyStaking
   let psyToken
-  let dfrancParams
+  let psyParams
   let erc20
 
   let contracts
@@ -89,23 +89,23 @@ contract('BorrowerOperations', async (accounts) => {
       defaultPool = contracts.defaultPool
       borrowerOperations = contracts.borrowerOperations
       hintHelpers = contracts.hintHelpers
-      dfrancParams = contracts.dfrancParameters
+      psyParams = contracts.psyParameters
 
       psyStaking = PSYContracts.psyStaking
       psyToken = PSYContracts.psyToken
       communityIssuance = PSYContracts.communityIssuance
       erc20 = contracts.erc20
 
-      await dfrancParams.sanitizeParameters(ZERO_ADDRESS)
-      await dfrancParams.sanitizeParameters(erc20.address)
+      await psyParams.sanitizeParameters(ZERO_ADDRESS)
+      await psyParams.sanitizeParameters(erc20.address)
 
-      SLSD_GAS_COMPENSATION = await dfrancParams.SLSD_GAS_COMPENSATION(ZERO_ADDRESS)
-      MIN_NET_DEBT = await dfrancParams.MIN_NET_DEBT(ZERO_ADDRESS)
-      BORROWING_FEE_FLOOR = await dfrancParams.BORROWING_FEE_FLOOR(ZERO_ADDRESS)
+      SLSD_GAS_COMPENSATION = await psyParams.SLSD_GAS_COMPENSATION(ZERO_ADDRESS)
+      MIN_NET_DEBT = await psyParams.MIN_NET_DEBT(ZERO_ADDRESS)
+      BORROWING_FEE_FLOOR = await psyParams.BORROWING_FEE_FLOOR(ZERO_ADDRESS)
 
-      SLSD_GAS_COMPENSATION_ERC20 = await dfrancParams.SLSD_GAS_COMPENSATION(erc20.address)
-      MIN_NET_DEBT_ERC20 = await dfrancParams.MIN_NET_DEBT(erc20.address)
-      BORROWING_FEE_FLOOR_ERC20 = await dfrancParams.BORROWING_FEE_FLOOR(erc20.address)
+      SLSD_GAS_COMPENSATION_ERC20 = await psyParams.SLSD_GAS_COMPENSATION(erc20.address)
+      MIN_NET_DEBT_ERC20 = await psyParams.MIN_NET_DEBT(erc20.address)
+      BORROWING_FEE_FLOOR_ERC20 = await psyParams.BORROWING_FEE_FLOOR(erc20.address)
 
       await psyToken.unprotectedMint(multisig, dec(5, 24))
 
@@ -118,7 +118,7 @@ contract('BorrowerOperations', async (accounts) => {
         if (index >= 20) break
       }
     })
-
+    
     it('addColl(): reverts when top-up would leave trove with ICR < MCR', async () => {
       // alice creates a Trove and adds first collateral
       await openTrove({ ICR: toBN(dec(2, 18)), extraParams: { from: alice } })
@@ -471,8 +471,8 @@ contract('BorrowerOperations', async (accounts) => {
       assert.isTrue(bobNewColl_Asset.eq(bobCollBeforeAsset.add(bobPendingETHRewardAsset).add(bobTopUp)))
       assert.isTrue(bobNewDebt_Asset.eq(bobDebtBeforeAsset.add(bobPendingSLSDDebtRewardAsset)))
 
-      /* Check that both Alice and Bob's snapshots of the rewards-per-unit-staked metrics should be updated
-       to the latest values of L_ETH and L_SLSDDebt */
+      //Check that both Alice and Bob's snapshots of the rewards-per-unit-staked metrics should be updated
+      // to the latest values of L_ETH and L_SLSDDebt 
       const alice_rewardSnapshot_After = await troveManagerHelpers.getRewardSnapshots(alice, ZERO_ADDRESS)
       const alice_ETHrewardSnapshot_After = alice_rewardSnapshot_After[0]
       const alice_SLSDDebtRewardSnapshot_After = alice_rewardSnapshot_After[1]
@@ -1186,8 +1186,8 @@ contract('BorrowerOperations', async (accounts) => {
         10000
       )
 
-      /* After top up, both Alice and Bob's snapshots of the rewards-per-unit-staked metrics should be updated
-       to the latest values of L_ETH and L_SLSDDebt */
+      // After top up, both Alice and Bob's snapshots of the rewards-per-unit-staked metrics should be updated
+      // to the latest values of L_ETH and L_SLSDDebt 
       const alice_rewardSnapshot_After = await troveManagerHelpers.getRewardSnapshots(alice, ZERO_ADDRESS)
       const alice_ETHrewardSnapshot_After = alice_rewardSnapshot_After[0]
       const alice_SLSDDebtRewardSnapshot_After = alice_rewardSnapshot_After[1]
@@ -4548,8 +4548,8 @@ contract('BorrowerOperations', async (accounts) => {
         extraParams: { from: bob },
       })
 
-      const CCR = await dfrancParams.CCR(ZERO_ADDRESS)
-      const CCRERC20 = await dfrancParams.CCR(erc20.address)
+      const CCR = await psyParams.CCR(ZERO_ADDRESS)
+      const CCRERC20 = await psyParams.CCR(erc20.address)
 
       assert.isFalse(await th.checkRecoveryMode(contracts))
       assert.isFalse(await th.checkRecoveryMode(contracts, erc20.address))
@@ -4633,8 +4633,8 @@ contract('BorrowerOperations', async (accounts) => {
         ICR: toBN(dec(2, 18)),
         extraParams: { from: bob },
       })
-      const CCR = await dfrancParams.CCR(ZERO_ADDRESS)
-      const CCRERC20 = await dfrancParams.CCR(erc20.address)
+      const CCR = await psyParams.CCR(ZERO_ADDRESS)
+      const CCRERC20 = await psyParams.CCR(erc20.address)
 
       assert.isFalse(await th.checkRecoveryMode(contracts))
       assert.isFalse(await th.checkRecoveryMode(contracts, erc20.address))
@@ -4786,8 +4786,8 @@ contract('BorrowerOperations', async (accounts) => {
         ICR: toBN(dec(2, 18)),
         extraParams: { from: bob },
       })
-      const CCR = await dfrancParams.CCR(ZERO_ADDRESS)
-      const CCRERC20 = await dfrancParams.CCR(erc20.address)
+      const CCR = await psyParams.CCR(ZERO_ADDRESS)
+      const CCRERC20 = await psyParams.CCR(erc20.address)
 
       assert.isFalse(await th.checkRecoveryMode(contracts))
       assert.isFalse(await th.checkRecoveryMode(contracts, erc20.address))
@@ -4884,8 +4884,8 @@ contract('BorrowerOperations', async (accounts) => {
         ICR: toBN(dec(2, 18)),
         extraParams: { from: bob },
       })
-      const CCR = await dfrancParams.CCR(ZERO_ADDRESS)
-      const CCRERC20 = await dfrancParams.CCR(erc20.address)
+      const CCR = await psyParams.CCR(ZERO_ADDRESS)
+      const CCRERC20 = await psyParams.CCR(erc20.address)
 
       assert.isFalse(await th.checkRecoveryMode(contracts))
       assert.isFalse(await th.checkRecoveryMode(contracts, erc20.address))
@@ -5011,8 +5011,8 @@ contract('BorrowerOperations', async (accounts) => {
         ICR: toBN(dec(2, 18)),
         extraParams: { from: bob },
       })
-      const CCR = await dfrancParams.CCR(ZERO_ADDRESS)
-      const CCRERC20 = await dfrancParams.CCR(erc20.address)
+      const CCR = await psyParams.CCR(ZERO_ADDRESS)
+      const CCRERC20 = await psyParams.CCR(erc20.address)
 
       assert.isFalse(await th.checkRecoveryMode(contracts))
       assert.isFalse(await th.checkRecoveryMode(contracts, erc20.address))
@@ -7847,7 +7847,7 @@ contract('BorrowerOperations', async (accounts) => {
         'BorrowerOps: Caller doesnt have enough SLSD to make repayment'
       )
     })
-
+    
     // --- openTrove() ---
 
     if (!withProxy) {
@@ -8021,6 +8021,7 @@ contract('BorrowerOperations', async (accounts) => {
         assert.isTrue(E_Coll_Asset.eq(E_emittedColl_Asset))
       })
     }
+    
 
     it('openTrove(): Opens a trove with net debt >= minimum net debt', async () => {
       // Add 1 wei to correct for rounding error in helper function

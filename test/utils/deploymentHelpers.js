@@ -61,7 +61,7 @@ class DeploymentHelper {
     const stabilityPoolTemplate = await StabilityPool.new()
     const stabilityPoolTemplateV2 = await StabilityPool.new()
     const stabilityPoolManager = await StabilityPoolManager.new()
-    const dfrancParameters = await PSYParameters.new()
+    const psyParameters = await PSYParameters.new()
     const gasPool = await GasPool.new()
     const defaultPool = await DefaultPool.new()
     const collSurplusPool = await CollSurplusPool.new()
@@ -84,7 +84,7 @@ class DeploymentHelper {
     CollSurplusPool.setAsDeployed(collSurplusPool)
     BorrowerOperations.setAsDeployed(borrowerOperations)
     HintHelpers.setAsDeployed(hintHelpers)
-    PSYParameters.setAsDeployed(dfrancParameters)
+    PSYParameters.setAsDeployed(psyParameters)
     ERC20Test.setAsDeployed(erc20)
     AdminContract.setAsDeployed(adminContract)
 
@@ -100,7 +100,7 @@ class DeploymentHelper {
       stabilityPoolTemplate,
       stabilityPoolTemplateV2,
       stabilityPoolManager,
-      dfrancParameters,
+      psyParameters,
       gasPool,
       defaultPool,
       collSurplusPool,
@@ -127,7 +127,7 @@ class DeploymentHelper {
     testerContracts.stabilityPoolTemplate = await StabilityPoolTester.new()
     testerContracts.stabilityPoolTemplateV2 = await StabilityPoolTester.new()
     testerContracts.stabilityPoolManager = await StabilityPoolManager.new()
-    testerContracts.dfrancParameters = await PSYParameters.new()
+    testerContracts.psyParameters = await PSYParameters.new()
     testerContracts.gasPool = await GasPool.new()
     testerContracts.collSurplusPool = await CollSurplusPool.new()
     testerContracts.borrowerOperations = await BorrowerOperationsTester.new()
@@ -166,6 +166,133 @@ class DeploymentHelper {
     contracts.slsdToken = await SLSDTokenTester.new(contracts.stabilityPoolManager.address)
     return contracts
   }
+  
+  static async connectContractsWithoutPSY(
+    contracts,
+    treasuryAddress
+  ) {
+    await contracts.slsdToken.addTroveManager(contracts.troveManager.address)
+    await contracts.slsdToken.addBorrowerOps(contracts.borrowerOperations.address)
+
+    // set TroveManager addr in SortedTroves
+    await contracts.sortedTroves.setParams(
+      contracts.troveManager.address,
+      contracts.troveManagerHelpers.address,
+      contracts.borrowerOperations.address
+    )
+
+    await contracts.psyParameters.setAddresses(
+      contracts.activePool.address,
+      contracts.defaultPool.address,
+      contracts.priceFeedTestnet.address,
+      contracts.adminContract.address
+    )
+
+    // set contracts in the Trove Manager
+    await contracts.troveManager.setAddresses(
+      contracts.stabilityPoolManager.address,
+      contracts.gasPool.address,
+      contracts.collSurplusPool.address,
+      contracts.slsdToken.address,
+      contracts.sortedTroves.address,
+      ZERO_ADDRESS,
+      treasuryAddress,
+      contracts.psyParameters.address,
+      contracts.troveManagerHelpers.address
+    )
+
+    // set contracts in the TroveManagerHelpers
+    await contracts.troveManagerHelpers.setAddresses(
+      contracts.borrowerOperations.address,
+      contracts.slsdToken.address,
+      contracts.sortedTroves.address,
+      contracts.psyParameters.address,
+      contracts.troveManager.address
+    )
+
+    // set contracts in BorrowerOperations
+    await contracts.borrowerOperations.setAddresses(
+      contracts.troveManager.address,
+      contracts.troveManagerHelpers.address,
+      contracts.stabilityPoolManager.address,
+      contracts.gasPool.address,
+      contracts.collSurplusPool.address,
+      contracts.sortedTroves.address,
+      contracts.slsdToken.address,
+      ZERO_ADDRESS,
+      treasuryAddress,
+      contracts.psyParameters.address
+    )
+
+    await contracts.stabilityPoolManager.setAddresses(contracts.adminContract.address)
+
+    await contracts.adminContract.setAddresses(
+      contracts.psyParameters.address,
+      contracts.stabilityPoolManager.address,
+      contracts.borrowerOperations.address,
+      contracts.troveManager.address,
+      contracts.troveManagerHelpers.address,
+      contracts.slsdToken.address,
+      contracts.sortedTroves.address,
+      ZERO_ADDRESS,
+    )
+
+    await contracts.activePool.setAddresses(
+      contracts.borrowerOperations.address,
+      contracts.troveManager.address,
+      contracts.troveManagerHelpers.address,
+      contracts.stabilityPoolManager.address,
+      contracts.defaultPool.address,
+      contracts.collSurplusPool.address
+    )
+
+    await contracts.defaultPool.setAddresses(
+      contracts.troveManager.address,
+      contracts.troveManagerHelpers.address,
+      contracts.activePool.address
+    )
+
+    await contracts.collSurplusPool.setAddresses(
+      contracts.borrowerOperations.address,
+      contracts.troveManager.address,
+      contracts.troveManagerHelpers.address,
+      contracts.activePool.address
+    )
+
+    // set contracts in HintHelpers
+    await contracts.hintHelpers.setAddresses(
+      contracts.sortedTroves.address,
+      contracts.troveManager.address,
+      contracts.troveManagerHelpers.address,
+      contracts.psyParameters.address
+    )
+
+    // Set Liquity Configs (since the tests have been designed with it)
+    await contracts.psyParameters.setCollateralParameters(
+      ZERO_ADDRESS,
+      '1100000000000000000',
+      '1500000000000000000',
+      dec(200, 18),
+      dec(1800, 18),
+      200,
+      50,
+      500,
+      50
+    )
+
+    await contracts.psyParameters.setCollateralParameters(
+      contracts.erc20.address,
+      '1100000000000000000',
+      '1500000000000000000',
+      dec(200, 18),
+      dec(1800, 18),
+      200,
+      50,
+      500,
+      50
+    )
+
+  }
 
   // Connect contracts to their dependencies
   static async connectCoreContracts(contracts, PSYContracts) {
@@ -179,7 +306,7 @@ class DeploymentHelper {
       contracts.borrowerOperations.address
     )
 
-    await contracts.dfrancParameters.setAddresses(
+    await contracts.psyParameters.setAddresses(
       contracts.activePool.address,
       contracts.defaultPool.address,
       contracts.priceFeedTestnet.address,
@@ -194,7 +321,8 @@ class DeploymentHelper {
       contracts.slsdToken.address,
       contracts.sortedTroves.address,
       PSYContracts.psyStaking.address,
-      contracts.dfrancParameters.address,
+      ZERO_ADDRESS,
+      contracts.psyParameters.address,
       contracts.troveManagerHelpers.address
     )
 
@@ -203,7 +331,7 @@ class DeploymentHelper {
       contracts.borrowerOperations.address,
       contracts.slsdToken.address,
       contracts.sortedTroves.address,
-      contracts.dfrancParameters.address,
+      contracts.psyParameters.address,
       contracts.troveManager.address
     )
 
@@ -217,13 +345,14 @@ class DeploymentHelper {
       contracts.sortedTroves.address,
       contracts.slsdToken.address,
       PSYContracts.psyStaking.address,
-      contracts.dfrancParameters.address
+      ZERO_ADDRESS,
+      contracts.psyParameters.address
     )
 
     await contracts.stabilityPoolManager.setAddresses(contracts.adminContract.address)
 
     await contracts.adminContract.setAddresses(
-      contracts.dfrancParameters.address,
+      contracts.psyParameters.address,
       contracts.stabilityPoolManager.address,
       contracts.borrowerOperations.address,
       contracts.troveManager.address,
@@ -260,7 +389,7 @@ class DeploymentHelper {
       contracts.sortedTroves.address,
       contracts.troveManager.address,
       contracts.troveManagerHelpers.address,
-      contracts.dfrancParameters.address
+      contracts.psyParameters.address
     )
   }
 
@@ -291,7 +420,7 @@ class DeploymentHelper {
     )
 
     await PSYContracts.lockedPSY.setAddresses(PSYContracts.psyToken.address)
-
+    
     await coreContracts.stabilityPoolTemplate.setAddresses(
       ZERO_ADDRESS,
       coreContracts.borrowerOperations.address,
@@ -300,7 +429,7 @@ class DeploymentHelper {
       coreContracts.slsdToken.address,
       coreContracts.sortedTroves.address,
       PSYContracts.communityIssuance.address,
-      coreContracts.dfrancParameters.address
+      coreContracts.psyParameters.address
     )
 
     await coreContracts.stabilityPoolTemplateV2.setAddresses(
@@ -311,9 +440,9 @@ class DeploymentHelper {
       coreContracts.slsdToken.address,
       coreContracts.sortedTroves.address,
       PSYContracts.communityIssuance.address,
-      coreContracts.dfrancParameters.address
+      coreContracts.psyParameters.address
     )
-
+    
     if (skipPool) {
       return
     }
@@ -351,7 +480,7 @@ class DeploymentHelper {
     if (!liquitySettings) return
 
     // Set Liquity Configs (since the tests have been designed with it)
-    await coreContracts.dfrancParameters.setCollateralParameters(
+    await coreContracts.psyParameters.setCollateralParameters(
       ZERO_ADDRESS,
       '1100000000000000000',
       '1500000000000000000',
@@ -363,7 +492,7 @@ class DeploymentHelper {
       50
     )
 
-    await coreContracts.dfrancParameters.setCollateralParameters(
+    await coreContracts.psyParameters.setCollateralParameters(
       coreContracts.erc20.address,
       '1100000000000000000',
       '1500000000000000000',

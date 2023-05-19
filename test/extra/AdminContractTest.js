@@ -60,7 +60,7 @@ contract('AdminContract', async (accounts) => {
         contracts.slsdToken.address,
         contracts.sortedTroves.address,
         PSYContracts.communityIssuance.address,
-        contracts.dfrancParameters.address
+        contracts.psyParameters.address
       )
 
       await PSYContracts.psyToken.approve(PSYContracts.communityIssuance.address, ethers.constants.MaxUint256)
@@ -107,7 +107,7 @@ contract('AdminContract', async (accounts) => {
       assert.equal(dataOracle[1], fakeIndex)
       assert.equal(dataOracle[2], true)
 
-      assert.notEqual((await contracts.dfrancParameters.redemptionBlock(slsdToken.address)).toString(), 0)
+      assert.notEqual((await contracts.psyParameters.redemptionBlock(slsdToken.address)).toString(), 0)
       assert.notEqual(await stabilityPoolManager.unsafeGetAssetStabilityPool(slsdToken.address), ZERO_ADDRESS)
       assert.isTrue((await psyToken.balanceOf(PSYContracts.communityIssuance.address)).gt(toBN(dec(100, 18))))
       assert.notEqual(await PSYContracts.communityIssuance.monDistributionsByPool, 0)

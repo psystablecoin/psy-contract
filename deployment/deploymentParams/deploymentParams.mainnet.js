@@ -12,7 +12,7 @@ const externalAddrs = {
 }
 
 // change for MULTISIG!!
-const dfrancAddresses = {
+const psyAddresses = {
   ADMIN_MULTI: "0x83737EAe72ba7597b36494D723fbF58cAfee8A69", // Gnosis Multisig on ETH
   PSY_SAFE: "0x83737EAe72ba7597b36494D723fbF58cAfee8A69", // Gnosis Multisig on ETH
   DEPLOYER: "0x7d7711efd844e5e204DF29Dc3e109D1aF95a801C" // Change that for deployer
@@ -45,7 +45,7 @@ const ETHERSCAN_BASE_URL = 'https://etherscan.io/address'
 
 module.exports = {
   externalAddrs,
-  dfrancAddresses,
+  psyAddresses,
   monetaCommunityIssuanceParams,
   OUTPUT_FILE,
   waitFunction,

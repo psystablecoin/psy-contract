@@ -11,7 +11,7 @@ let mdh;
 let config;
 let deployerWallet;
 let gasPrice;
-let dfrancCore;
+let psyCore;
 let PSYContracts;
 let deploymentState;
 
@@ -24,8 +24,8 @@ async function mainnetDeploy(configParams) {
   config = configParams;
   gasPrice = config.GAS_PRICE;
 
-  ADMIN_WALLET = config.dfrancAddresses.ADMIN_MULTI
-  TREASURY_WALLET = config.dfrancAddresses.PSY_SAFE
+  ADMIN_WALLET = config.psyAddresses.ADMIN_MULTI
+  TREASURY_WALLET = config.psyAddresses.PSY_SAFE
 
   deployerWallet = (await ethers.getSigners())[0]
   mdh = new DeploymentHelper(config, deployerWallet)
@@ -33,7 +33,7 @@ async function mainnetDeploy(configParams) {
   deploymentState = mdh.loadPreviousDeployment()
 
   console.log(`deployer address: ${deployerWallet.address}`)
-  //assert.equal(deployerWallet.address, config.dfrancAddresses.DEPLOYER)
+  //assert.equal(deployerWallet.address, config.psyAddresses.DEPLOYER)
 
   console.log(`deployerETHBalance before: ${await ethers.provider.getBalance(deployerWallet.address)}`)
 
@@ -54,9 +54,9 @@ async function mainnetDeploy(configParams) {
   if (config.DEPLOYMENT_PHASE == 2) {
    
     // Deploy core logic contracts
-    dfrancCore = await mdh.deployDchfCoreMainnet(deploymentState, ADMIN_WALLET)
+    psyCore = await mdh.deployDchfCoreMainnet(deploymentState, ADMIN_WALLET)
     
-    await mdh.logContractObjects(dfrancCore)
+    await mdh.logContractObjects(psyCore)
 
     // Deploy PSY Contracts
     PSYContracts = await mdh.deployPSYContractsMainnet(
@@ -69,12 +69,12 @@ async function mainnetDeploy(configParams) {
 
 
     await mdh.connectCoreContractsMainnet(
-      dfrancCore,
+      psyCore,
       PSYContracts
     )
 
     console.log("Connect PSY Contract to Core");
-    await mdh.connectPSYContractsToCoreMainnet(PSYContracts, dfrancCore, TREASURY_WALLET)
+    await mdh.connectPSYContractsToCoreMainnet(PSYContracts, psyCore, TREASURY_WALLET)
 
     
     console.log("Adding Collaterals");
@@ -88,7 +88,7 @@ async function mainnetDeploy(configParams) {
     
     mdh.saveDeployment(deploymentState)
 
-    await mdh.deployMultiTroveGetterMainnet(dfrancCore, deploymentState)
+    await mdh.deployMultiTroveGetterMainnet(psyCore, deploymentState)
     await mdh.logContractObjects(PSYContracts)
 
     await giveContractsOwnerships();
@@ -106,7 +106,7 @@ async function addETHCollaterals() {
   if (!ETHAddress || ETHAddress == "")
     throw ("CANNOT FIND THE ETH Address")
 
-  if ((await dfrancCore.stabilityPoolManager.unsafeGetAssetStabilityPool(ETHAddress)) == ZERO_ADDRESS) {
+  if ((await psyCore.stabilityPoolManager.unsafeGetAssetStabilityPool(ETHAddress)) == ZERO_ADDRESS) {
 
     console.log("Creating Collateral - ETH")
 
@@ -124,13 +124,13 @@ async function addETHCollaterals() {
       .sendAndWaitForTransaction(
         stabilityPoolETH.setAddresses(
           ETHAddress,
-          dfrancCore.borrowerOperations.address,
-          dfrancCore.troveManager.address,
-          dfrancCore.troveManagerHelpers.address,
-          dfrancCore.slsdToken.address,
-          dfrancCore.sortedTroves.address,
+          psyCore.borrowerOperations.address,
+          psyCore.troveManager.address,
+          psyCore.troveManagerHelpers.address,
+          psyCore.slsdToken.address,
+          psyCore.sortedTroves.address,
           PSYContracts.communityIssuance.address,
-          dfrancCore.dfrancParameters.address,
+          psyCore.psyParameters.address,
           { gasPrice }
         ))
 
@@ -138,7 +138,7 @@ async function addETHCollaterals() {
 
     const txReceiptSBETH = await mdh
       .sendAndWaitForTransaction(
-        dfrancCore.adminContract.addNewCollateral(
+        psyCore.adminContract.addNewCollateral(
           stabilityPoolETH.address,
           config.externalAddrs.CHAINLINK_ETHUSD_PROXY,
           config.externalAddrs.CHAINLINK_USSLSD_PROXY,
@@ -177,7 +177,7 @@ async function addBTCCollaterals() {
   if (!BTCAddress || BTCAddress == "")
     throw ("CANNOT FIND THE renBTC Address")
 
-  if ((await dfrancCore.stabilityPoolManager.unsafeGetAssetStabilityPool(BTCAddress)) == ZERO_ADDRESS) {
+  if ((await psyCore.stabilityPoolManager.unsafeGetAssetStabilityPool(BTCAddress)) == ZERO_ADDRESS) {
     console.log("Creating Collateral - BTC")
 
     const stabilityPoolBTCFactory = await ethers.getContractFactory("StabilityPool")
@@ -194,13 +194,13 @@ async function addBTCCollaterals() {
       .sendAndWaitForTransaction(
         stabilityPoolBTC.setAddresses(
           BTCAddress,
-          dfrancCore.borrowerOperations.address,
-          dfrancCore.troveManager.address,
-          dfrancCore.troveManagerHelpers.address,
-          dfrancCore.slsdToken.address,
-          dfrancCore.sortedTroves.address,
+          psyCore.borrowerOperations.address,
+          psyCore.troveManager.address,
+          psyCore.troveManagerHelpers.address,
+          psyCore.slsdToken.address,
+          psyCore.sortedTroves.address,
           PSYContracts.communityIssuance.address,
-          dfrancCore.dfrancParameters.address,
+          psyCore.psyParameters.address,
           { gasPrice }
         ))
 
@@ -208,7 +208,7 @@ async function addBTCCollaterals() {
 
     const txReceiptSBBTC = await mdh
       .sendAndWaitForTransaction(
-        dfrancCore.adminContract.addNewCollateral(
+        psyCore.adminContract.addNewCollateral(
           stabilityPoolBTC.address,
           config.externalAddrs.CHAINLINK_BTCUSD_PROXY,
           config.externalAddrs.CHAINLINK_USSLSD_PROXY,
@@ -242,17 +242,17 @@ async function addBTCCollaterals() {
 
 
 async function giveContractsOwnerships() {
-  await transferOwnership(dfrancCore.adminContract, ADMIN_WALLET);
-  await transferOwnership(dfrancCore.priceFeed, ADMIN_WALLET);
-  await transferOwnership(dfrancCore.dfrancParameters, ADMIN_WALLET);
-  await transferOwnership(dfrancCore.stabilityPoolManager, ADMIN_WALLET);
-  await transferOwnership(dfrancCore.slsdToken, ADMIN_WALLET);
+  await transferOwnership(psyCore.adminContract, ADMIN_WALLET);
+  await transferOwnership(psyCore.priceFeed, ADMIN_WALLET);
+  await transferOwnership(psyCore.psyParameters, ADMIN_WALLET);
+  await transferOwnership(psyCore.stabilityPoolManager, ADMIN_WALLET);
+  await transferOwnership(psyCore.slsdToken, ADMIN_WALLET);
   await transferOwnership(PSYContracts.PSYStaking, ADMIN_WALLET);
   await transferOwnership(PSYContracts.communityIssuance, TREASURY_WALLET);
-  await transferOwnership(dfrancCore.troveManager, ADMIN_WALLET);
-  await transferOwnership(dfrancCore.troveManagerHelpers, ADMIN_WALLET);
-  await transferOwnership(dfrancCore.borrowerOperations, ADMIN_WALLET);
-  await transferOwnership(dfrancCore.hintHelpers, ADMIN_WALLET);
+  await transferOwnership(psyCore.troveManager, ADMIN_WALLET);
+  await transferOwnership(psyCore.troveManagerHelpers, ADMIN_WALLET);
+  await transferOwnership(psyCore.borrowerOperations, ADMIN_WALLET);
+  await transferOwnership(psyCore.hintHelpers, ADMIN_WALLET);
 }
 
 async function transferOwnership(contract, newOwner) {

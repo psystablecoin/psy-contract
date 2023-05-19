@@ -24,7 +24,7 @@ async function main() {
 
     await mdh.sendAndWaitForTransaction(
         LockedPSYInstance.transferOwnership(
-            config.dfrancAddresses.ADMIN_MULTI,
+            config.psyAddresses.ADMIN_MULTI,
             { gasPrice: config.GAS_PRICE }
         ))
 

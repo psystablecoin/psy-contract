@@ -12,7 +12,7 @@ const externalAddrs = {
 }
 
 
-const dfrancAddresses = {
+const psyAddresses = {
   ADMIN_MULTI: "0x9a8C847ed0ABb000501fB6b8d8E0fF9bcDd24dCb",
   PSY_SAFE: "0x9a8C847ed0ABb000501fB6b8d8E0fF9bcDd24dCb", // TODO
   DEPLOYER: "0x9a8C847ed0ABb000501fB6b8d8E0fF9bcDd24dCb"
@@ -44,7 +44,7 @@ const ETHERSCAN_BASE_URL = 'https://sepolia.etherscan.io/address'
 
 module.exports = {
   externalAddrs,
-  dfrancAddresses,
+  psyAddresses,
   psyCommunityIssuanceParams,
   OUTPUT_FILE,
   waitFunction,

@@ -4,8 +4,6 @@ pragma solidity ^0.8.14;
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-import "hardhat/console.sol";
-
 import "./Interfaces/IBorrowerOperations.sol";
 import "./Interfaces/ITroveManager.sol";
 import "./Interfaces/ITroveManagerHelpers.sol";
@@ -41,6 +39,8 @@ contract BorrowerOperations is PSYBase, CheckContract, IBorrowerOperations, Init
 	IPSYStaking public PSYStaking;
 	address public PSYStakingAddress;
 	bool isPSYReady;
+
+	address treasury;
 
 	ISLSDToken public SLSDToken;
 
@@ -116,6 +116,7 @@ contract BorrowerOperations is PSYBase, CheckContract, IBorrowerOperations, Init
 		address _sortedTrovesAddress,
 		address _slsdTokenAddress,
 		address _PSYStakingAddress,
+		address _treasury,
 		address _psyParamsAddress
 	) external override initializer onlyOwner {
 		require(!isInitialized, "Already initialized");
@@ -142,8 +143,10 @@ contract BorrowerOperations is PSYBase, CheckContract, IBorrowerOperations, Init
 			PSYStakingAddress = _PSYStakingAddress;
 			PSYStaking = IPSYStaking(_PSYStakingAddress);
 			isPSYReady = true;
+		} else {
+			changeTreasuryAddress(_treasury);	
 		}
-		
+
 		setPSYParameters(_psyParamsAddress);
 
 		emit TroveManagerAddressChanged(_troveManagerAddress);
@@ -171,8 +174,9 @@ contract BorrowerOperations is PSYBase, CheckContract, IBorrowerOperations, Init
 		address _upperHint,
 		address _lowerHint
 	) external payable override {
+		
 		psyParams.sanitizeParameters(_asset);
-		console.log("a",_SLSDamount);
+
 		ContractsCache memory contractsCache = ContractsCache(
 			troveManager,
 			troveManagerHelpers,
@@ -197,7 +201,7 @@ contract BorrowerOperations is PSYBase, CheckContract, IBorrowerOperations, Init
 
 		vars.netDebt = _SLSDamount;
 
-		if (!isRecoveryMode && isPSYReady) {
+		if (!isRecoveryMode) {
 			vars.SLSDFee = _triggerBorrowingFee(
 				vars.asset,
 				contractsCache.troveManager,
@@ -208,7 +212,9 @@ contract BorrowerOperations is PSYBase, CheckContract, IBorrowerOperations, Init
 			);
 			vars.netDebt = vars.netDebt.add(vars.SLSDFee);
 		}
+
 		_requireAtLeastMinNetDebt(vars.asset, vars.netDebt);
+
 
 		// ICR is based on the composite debt, i.e. the requested SLSD amount + SLSD borrowing fee + SLSD gas comp.
 		vars.compositeDebt = _getCompositeDebt(vars.asset, vars.netDebt);
@@ -450,7 +456,7 @@ contract BorrowerOperations is PSYBase, CheckContract, IBorrowerOperations, Init
 		vars.netDebtChange = _SLSDChange;
 
 		// If the adjustment incorporates a debt increase and system is in Normal Mode, then trigger a borrowing fee
-		if (_isDebtIncrease && !isRecoveryMode && isPSYReady) {
+		if (_isDebtIncrease && !isRecoveryMode) {
 			vars.SLSDFee = _triggerBorrowingFee(
 				vars.asset,
 				contractsCache.troveManager,
@@ -617,6 +623,14 @@ contract BorrowerOperations is PSYBase, CheckContract, IBorrowerOperations, Init
 		isPSYReady = true;
 	}
 
+	/*
+	 * Add treasury address who receives fees until PSY modules get registered
+	 */
+	function changeTreasuryAddress(address _treasury) public onlyOwner {
+		require(_treasury != address(0), "Treasury address is zero");
+		treasury = _treasury;
+	}
+
 	// --- Helper functions ---
 
 	function _triggerBorrowingFee(
@@ -633,9 +647,13 @@ contract BorrowerOperations is PSYBase, CheckContract, IBorrowerOperations, Init
 		_requireUserAcceptsFee(SLSDFee, _SLSDamount, _maxFeePercentage);
 
 		// Send fee to PSY staking contract
-		_SLSDToken.mint(_asset, PSYStakingAddress, SLSDFee);
-		PSYStaking.increaseF_SLSD(SLSDFee);
-
+		if (isPSYReady) {
+			_SLSDToken.mint(_asset, PSYStakingAddress, SLSDFee);
+			PSYStaking.increaseF_SLSD(SLSDFee);
+		} else {
+			_SLSDToken.mint(_asset, treasury, SLSDFee);
+		}
+		
 		return SLSDFee;
 	}
 
@@ -872,7 +890,6 @@ contract BorrowerOperations is PSYBase, CheckContract, IBorrowerOperations, Init
 	}
 
 	function _requireAtLeastMinNetDebt(address _asset, uint256 _netDebt) internal view {
-		console.log("B",_netDebt, psyParams.MIN_NET_DEBT(_asset));
 		require(
 			_netDebt >= psyParams.MIN_NET_DEBT(_asset),
 			"BorrowerOps: Trove's net debt must be greater than minimum"

@@ -164,7 +164,7 @@ class DeploymentHelper {
     const collSurplusPool = await this.loadOrDeploy(collSurplusPoolFactory, 'collSurplusPool', deploymentState)
     const borrowerOperations = await this.loadOrDeploy(borrowerOperationsFactory, 'borrowerOperations', deploymentState)
     const hintHelpers = await this.loadOrDeploy(hintHelpersFactory, 'hintHelpers', deploymentState)
-    const dfrancParameters = await this.loadOrDeploy(vaultParametersFactory, 'dfrancParameters', deploymentState)
+    const psyParameters = await this.loadOrDeploy(vaultParametersFactory, 'psyParameters', deploymentState)
     const priceFeed = await this.loadOrDeploy(priceFeedFactory, 'priceFeed', deploymentState)
     const adminContract = await this.loadOrDeploy(adminContractFactory, 'adminContract', deploymentState)
 
@@ -205,7 +205,7 @@ class DeploymentHelper {
       await this.verifyContract('borrowerOperations', deploymentState, [], false)
       await this.verifyContract('hintHelpers', deploymentState, [], false)
       await this.verifyContract('SLSDToken', deploymentState, SLSDTokenParams)
-      await this.verifyContract('dfrancParameters', deploymentState, [], false)
+      await this.verifyContract('psyParameters', deploymentState, [], false)
       await this.verifyContract('adminContract', deploymentState, [], false)
     }
     console.log('verified on etherscan')
@@ -224,7 +224,7 @@ class DeploymentHelper {
       collSurplusPool,
       borrowerOperations,
       hintHelpers,
-      dfrancParameters
+      psyParameters
     }
 
 
@@ -311,8 +311,8 @@ class DeploymentHelper {
         contracts.borrowerOperations.address,
         { gasPrice }
       ))
-    await this.isOwnershipRenounced(contracts.dfrancParameters) ||
-      await this.sendAndWaitForTransaction(contracts.dfrancParameters.setAddresses(
+    await this.isOwnershipRenounced(contracts.psyParameters) ||
+      await this.sendAndWaitForTransaction(contracts.psyParameters.setAddresses(
         contracts.activePool.address,
         contracts.defaultPool.address,
         contracts.priceFeed.address,
@@ -328,7 +328,8 @@ class DeploymentHelper {
         contracts.slsdToken.address,
         contracts.sortedTroves.address,
         PSYContracts.PSYStaking.address,
-        contracts.dfrancParameters.address,
+        treasuryAddress,
+        contracts.psyParameters.address,
         contracts.troveManagerHelpers.address,
         { gasPrice }
       ))
@@ -338,7 +339,7 @@ class DeploymentHelper {
         contracts.borrowerOperations.address,
         contracts.slsdToken.address,
         contracts.sortedTroves.address,
-        contracts.dfrancParameters.address,
+        contracts.psyParameters.address,
         contracts.troveManager.address,
         { gasPrice }
       ))
@@ -352,8 +353,9 @@ class DeploymentHelper {
         contracts.collSurplusPool.address,
         contracts.sortedTroves.address,
         contracts.slsdToken.address,
+        treasuryAddress,
         PSYContracts.PSYStaking.address,
-        contracts.dfrancParameters.address,
+        contracts.psyParameters.address,
         { gasPrice }
       ))
 
@@ -393,7 +395,7 @@ class DeploymentHelper {
 
     await this.isOwnershipRenounced(contracts.adminContract) ||
       await this.sendAndWaitForTransaction(contracts.adminContract.setAddresses(
-        contracts.dfrancParameters.address,
+        contracts.psyParameters.address,
         contracts.stabilityPoolManager.address,
         contracts.borrowerOperations.address,
         contracts.troveManager.address,
@@ -410,7 +412,7 @@ class DeploymentHelper {
         contracts.sortedTroves.address,
         contracts.troveManager.address,
         contracts.troveManagerHelpers.address,
-        contracts.dfrancParameters.address,
+        contracts.psyParameters.address,
         { gasPrice }
       ))
   }

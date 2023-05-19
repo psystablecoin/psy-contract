@@ -25,7 +25,7 @@ contract(
     let psyStaking
     let psyToken
     let communityIssuance
-    let dfrancParameters
+    let psyParameters
 
     before(async () => {
       const coreContracts = await deploymentHelper.deployLiquityCore()
@@ -40,7 +40,7 @@ contract(
       stabilityPoolManager = coreContracts.stabilityPoolManager
       defaultPool = coreContracts.defaultPool
       borrowerOperations = coreContracts.borrowerOperations
-      dfrancParameters = coreContracts.dfrancParameters
+      psyParameters = coreContracts.psyParameters
 
       psyStaking = PSYContracts.psyStaking
       psyToken = PSYContracts.psyToken
@@ -54,13 +54,13 @@ contract(
     })
 
     it('Check if correct Addresses in Vault Parameters', async () => {
-      assert.equal(priceFeed.address, await dfrancParameters.priceFeed())
-      assert.equal(activePool.address, await dfrancParameters.activePool())
-      assert.equal(defaultPool.address, await dfrancParameters.defaultPool())
+      assert.equal(priceFeed.address, await psyParameters.priceFeed())
+      assert.equal(activePool.address, await psyParameters.activePool())
+      assert.equal(defaultPool.address, await psyParameters.defaultPool())
     })
 
-    it('Sets the correct dfrancParams address in TroveManager', async () => {
-      assert.equal(dfrancParameters.address, await troveManager.dfrancParams())
+    it('Sets the correct psyParams address in TroveManager', async () => {
+      assert.equal(psyParameters.address, await troveManager.psyParams())
     })
 
     it('Sets the correct SLSDToken address in TroveManager', async () => {
@@ -183,7 +183,7 @@ contract(
     //--- BorrowerOperations ---
 
     it('Sets the correct PSYParameters address in BorrowerOperations', async () => {
-      assert.equal(dfrancParameters.address, await borrowerOperations.dfrancParams())
+      assert.equal(psyParameters.address, await borrowerOperations.psyParams())
     })
 
     // TroveManager in BO

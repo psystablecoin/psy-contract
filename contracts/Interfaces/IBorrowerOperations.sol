@@ -40,6 +40,7 @@ interface IBorrowerOperations {
 		address _sortedTrovesAddress,
 		address _slsdTokenAddress,
 		address _PSYStakingAddress,
+		address _treasury,
 		address _psyParamsAddress
 	) external;
 

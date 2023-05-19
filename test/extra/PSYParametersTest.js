@@ -14,7 +14,7 @@ contract('PSYParameters', async (accounts) => {
   let contracts
   let priceFeed
   let borrowerOperations
-  let dfrancParameters
+  let psyParameters
   let erc20
 
   let MCR
@@ -67,17 +67,17 @@ contract('PSYParameters', async (accounts) => {
       activePool = contracts.activePool
       defaultPool = contracts.defaultPool
       borrowerOperations = contracts.borrowerOperations
-      dfrancParameters = contracts.dfrancParameters
+      psyParameters = contracts.psyParameters
       erc20 = contracts.erc20
 
-      MCR = await dfrancParameters.MCR_DEFAULT()
-      CCR = await dfrancParameters.CCR_DEFAULT()
-      GAS_COMPENSATION = await dfrancParameters.SLSD_GAS_COMPENSATION_DEFAULT()
-      MIN_NET_DEBT = await dfrancParameters.MIN_NET_DEBT_DEFAULT()
-      PERCENT_DIVISOR = await dfrancParameters.PERCENT_DIVISOR_DEFAULT()
-      BORROWING_FEE_FLOOR = await dfrancParameters.BORROWING_FEE_FLOOR_DEFAULT()
-      MAX_BORROWING_FEE = await dfrancParameters.MAX_BORROWING_FEE_DEFAULT()
-      REDEMPTION_FEE_FLOOR = await dfrancParameters.REDEMPTION_FEE_FLOOR_DEFAULT()
+      MCR = await psyParameters.MCR_DEFAULT()
+      CCR = await psyParameters.CCR_DEFAULT()
+      GAS_COMPENSATION = await psyParameters.SLSD_GAS_COMPENSATION_DEFAULT()
+      MIN_NET_DEBT = await psyParameters.MIN_NET_DEBT_DEFAULT()
+      PERCENT_DIVISOR = await psyParameters.PERCENT_DIVISOR_DEFAULT()
+      BORROWING_FEE_FLOOR = await psyParameters.BORROWING_FEE_FLOOR_DEFAULT()
+      MAX_BORROWING_FEE = await psyParameters.MAX_BORROWING_FEE_DEFAULT()
+      REDEMPTION_FEE_FLOOR = await psyParameters.REDEMPTION_FEE_FLOOR_DEFAULT()
 
       let index = 0
       for (const acc of accounts) {
@@ -92,33 +92,33 @@ contract('PSYParameters', async (accounts) => {
     })
 
     it('Formula Checks: Call every function with default value, Should match default values', async () => {
-      await dfrancParameters.setMCR(ZERO_ADDRESS, '1100000000000000000')
-      await dfrancParameters.setCCR(ZERO_ADDRESS, '1500000000000000000')
-      await dfrancParameters.setPercentDivisor(ZERO_ADDRESS, 100)
-      await dfrancParameters.setBorrowingFeeFloor(ZERO_ADDRESS, 50)
-      await dfrancParameters.setMaxBorrowingFee(ZERO_ADDRESS, 500)
-      await dfrancParameters.setSLSDGasCompensation(ZERO_ADDRESS, dec(200, 18))
-      await dfrancParameters.setMinNetDebt(ZERO_ADDRESS, dec(2000, 18))
-      await dfrancParameters.setRedemptionFeeFloor(ZERO_ADDRESS, 50)
+      await psyParameters.setMCR(ZERO_ADDRESS, '1100000000000000000')
+      await psyParameters.setCCR(ZERO_ADDRESS, '1500000000000000000')
+      await psyParameters.setPercentDivisor(ZERO_ADDRESS, 100)
+      await psyParameters.setBorrowingFeeFloor(ZERO_ADDRESS, 50)
+      await psyParameters.setMaxBorrowingFee(ZERO_ADDRESS, 500)
+      await psyParameters.setSLSDGasCompensation(ZERO_ADDRESS, dec(200, 18))
+      await psyParameters.setMinNetDebt(ZERO_ADDRESS, dec(2000, 18))
+      await psyParameters.setRedemptionFeeFloor(ZERO_ADDRESS, 50)
 
-      assert.equal((await dfrancParameters.MCR(ZERO_ADDRESS)).toString(), MCR)
-      assert.equal((await dfrancParameters.CCR(ZERO_ADDRESS)).toString(), CCR)
-      assert.equal((await dfrancParameters.PERCENT_DIVISOR(ZERO_ADDRESS)).toString(), PERCENT_DIVISOR)
-      assert.equal((await dfrancParameters.BORROWING_FEE_FLOOR(ZERO_ADDRESS)).toString(), BORROWING_FEE_FLOOR)
-      assert.equal((await dfrancParameters.MAX_BORROWING_FEE(ZERO_ADDRESS)).toString(), MAX_BORROWING_FEE)
-      assert.equal((await dfrancParameters.SLSD_GAS_COMPENSATION(ZERO_ADDRESS)).toString(), GAS_COMPENSATION)
-      assert.equal((await dfrancParameters.MIN_NET_DEBT(ZERO_ADDRESS)).toString(), MIN_NET_DEBT)
+      assert.equal((await psyParameters.MCR(ZERO_ADDRESS)).toString(), MCR)
+      assert.equal((await psyParameters.CCR(ZERO_ADDRESS)).toString(), CCR)
+      assert.equal((await psyParameters.PERCENT_DIVISOR(ZERO_ADDRESS)).toString(), PERCENT_DIVISOR)
+      assert.equal((await psyParameters.BORROWING_FEE_FLOOR(ZERO_ADDRESS)).toString(), BORROWING_FEE_FLOOR)
+      assert.equal((await psyParameters.MAX_BORROWING_FEE(ZERO_ADDRESS)).toString(), MAX_BORROWING_FEE)
+      assert.equal((await psyParameters.SLSD_GAS_COMPENSATION(ZERO_ADDRESS)).toString(), GAS_COMPENSATION)
+      assert.equal((await psyParameters.MIN_NET_DEBT(ZERO_ADDRESS)).toString(), MIN_NET_DEBT)
       assert.equal(
-        (await dfrancParameters.REDEMPTION_FEE_FLOOR(ZERO_ADDRESS)).toString(),
+        (await psyParameters.REDEMPTION_FEE_FLOOR(ZERO_ADDRESS)).toString(),
         REDEMPTION_FEE_FLOOR
       )
     })
 
     it('Try to edit Parameters has User, Revert Transactions', async () => {
-      await assertRevert(dfrancParameters.setPriceFeed(priceFeed.address, { from: user }))
-      await assertRevert(dfrancParameters.setAsDefault(ZERO_ADDRESS, { from: user }))
+      await assertRevert(psyParameters.setPriceFeed(priceFeed.address, { from: user }))
+      await assertRevert(psyParameters.setAsDefault(ZERO_ADDRESS, { from: user }))
       await assertRevert(
-        dfrancParameters.setCollateralParameters(
+        psyParameters.setCollateralParameters(
           ZERO_ADDRESS,
           MCR,
           CCR,
@@ -132,33 +132,33 @@ contract('PSYParameters', async (accounts) => {
         )
       )
 
-      await assertRevert(dfrancParameters.setMCR(ZERO_ADDRESS, MCR, { from: user }))
-      await assertRevert(dfrancParameters.setCCR(ZERO_ADDRESS, CCR, { from: user }))
+      await assertRevert(psyParameters.setMCR(ZERO_ADDRESS, MCR, { from: user }))
+      await assertRevert(psyParameters.setCCR(ZERO_ADDRESS, CCR, { from: user }))
       await assertRevert(
-        dfrancParameters.setSLSDGasCompensation(ZERO_ADDRESS, GAS_COMPENSATION, { from: user })
+        psyParameters.setSLSDGasCompensation(ZERO_ADDRESS, GAS_COMPENSATION, { from: user })
       )
-      await assertRevert(dfrancParameters.setMinNetDebt(ZERO_ADDRESS, MIN_NET_DEBT, { from: user }))
-      await assertRevert(dfrancParameters.setPercentDivisor(ZERO_ADDRESS, PERCENT_DIVISOR, { from: user }))
+      await assertRevert(psyParameters.setMinNetDebt(ZERO_ADDRESS, MIN_NET_DEBT, { from: user }))
+      await assertRevert(psyParameters.setPercentDivisor(ZERO_ADDRESS, PERCENT_DIVISOR, { from: user }))
       await assertRevert(
-        dfrancParameters.setBorrowingFeeFloor(ZERO_ADDRESS, BORROWING_FEE_FLOOR, { from: user })
+        psyParameters.setBorrowingFeeFloor(ZERO_ADDRESS, BORROWING_FEE_FLOOR, { from: user })
       )
-      await assertRevert(dfrancParameters.setMaxBorrowingFee(ZERO_ADDRESS, MAX_BORROWING_FEE, { from: user }))
+      await assertRevert(psyParameters.setMaxBorrowingFee(ZERO_ADDRESS, MAX_BORROWING_FEE, { from: user }))
       await assertRevert(
-        dfrancParameters.setRedemptionFeeFloor(ZERO_ADDRESS, REDEMPTION_FEE_FLOOR, { from: user })
+        psyParameters.setRedemptionFeeFloor(ZERO_ADDRESS, REDEMPTION_FEE_FLOOR, { from: user })
       )
     })
 
     it('sanitizeParameters: User call sanitizeParameters on Non-Configured Collateral - Set Default Values', async () => {
-      await dfrancParameters.sanitizeParameters(ZERO_ADDRESS, { from: user })
+      await psyParameters.sanitizeParameters(ZERO_ADDRESS, { from: user })
 
-      assert.equal(MCR.toString(), await dfrancParameters.MCR(ZERO_ADDRESS))
-      assert.equal(CCR.toString(), await dfrancParameters.CCR(ZERO_ADDRESS))
-      assert.equal(GAS_COMPENSATION.toString(), await dfrancParameters.SLSD_GAS_COMPENSATION(ZERO_ADDRESS))
-      assert.equal(MIN_NET_DEBT.toString(), await dfrancParameters.MIN_NET_DEBT(ZERO_ADDRESS))
-      assert.equal(PERCENT_DIVISOR.toString(), await dfrancParameters.PERCENT_DIVISOR(ZERO_ADDRESS))
-      assert.equal(BORROWING_FEE_FLOOR.toString(), await dfrancParameters.BORROWING_FEE_FLOOR(ZERO_ADDRESS))
-      assert.equal(MAX_BORROWING_FEE.toString(), await dfrancParameters.MAX_BORROWING_FEE(ZERO_ADDRESS))
-      assert.equal(REDEMPTION_FEE_FLOOR.toString(), await dfrancParameters.REDEMPTION_FEE_FLOOR(ZERO_ADDRESS))
+      assert.equal(MCR.toString(), await psyParameters.MCR(ZERO_ADDRESS))
+      assert.equal(CCR.toString(), await psyParameters.CCR(ZERO_ADDRESS))
+      assert.equal(GAS_COMPENSATION.toString(), await psyParameters.SLSD_GAS_COMPENSATION(ZERO_ADDRESS))
+      assert.equal(MIN_NET_DEBT.toString(), await psyParameters.MIN_NET_DEBT(ZERO_ADDRESS))
+      assert.equal(PERCENT_DIVISOR.toString(), await psyParameters.PERCENT_DIVISOR(ZERO_ADDRESS))
+      assert.equal(BORROWING_FEE_FLOOR.toString(), await psyParameters.BORROWING_FEE_FLOOR(ZERO_ADDRESS))
+      assert.equal(MAX_BORROWING_FEE.toString(), await psyParameters.MAX_BORROWING_FEE(ZERO_ADDRESS))
+      assert.equal(REDEMPTION_FEE_FLOOR.toString(), await psyParameters.REDEMPTION_FEE_FLOOR(ZERO_ADDRESS))
     })
 
     it('sanitizeParameters: User call sanitizeParameters on Configured Collateral - Ignore it', async () => {
@@ -175,9 +175,9 @@ contract('PSYParameters', async (accounts) => {
       const expectedMaxBorrowingFee = applyDecimalPrecision(newMaxBorrowingFee)
       const expectedRedemptionFeeFloor = applyDecimalPrecision(newRedemptionFeeFloor)
 
-      await dfrancParameters.setBorrowingFeeFloor(ZERO_ADDRESS, 1)
+      await psyParameters.setBorrowingFeeFloor(ZERO_ADDRESS, 1)
 
-      await dfrancParameters.setCollateralParameters(
+      await psyParameters.setCollateralParameters(
         ZERO_ADDRESS,
         newMCR,
         newCCR,
@@ -190,138 +190,138 @@ contract('PSYParameters', async (accounts) => {
         { from: owner }
       )
 
-      await dfrancParameters.sanitizeParameters(ZERO_ADDRESS, { from: user })
+      await psyParameters.sanitizeParameters(ZERO_ADDRESS, { from: user })
 
-      assert.equal(newMCR.toString(), await dfrancParameters.MCR(ZERO_ADDRESS))
-      assert.equal(newCCR.toString(), await dfrancParameters.CCR(ZERO_ADDRESS))
-      assert.equal(newGasComp.toString(), await dfrancParameters.SLSD_GAS_COMPENSATION(ZERO_ADDRESS))
-      assert.equal(newMinNetDebt.toString(), await dfrancParameters.MIN_NET_DEBT(ZERO_ADDRESS))
-      assert.equal(newPercentDivisor.toString(), await dfrancParameters.PERCENT_DIVISOR(ZERO_ADDRESS))
+      assert.equal(newMCR.toString(), await psyParameters.MCR(ZERO_ADDRESS))
+      assert.equal(newCCR.toString(), await psyParameters.CCR(ZERO_ADDRESS))
+      assert.equal(newGasComp.toString(), await psyParameters.SLSD_GAS_COMPENSATION(ZERO_ADDRESS))
+      assert.equal(newMinNetDebt.toString(), await psyParameters.MIN_NET_DEBT(ZERO_ADDRESS))
+      assert.equal(newPercentDivisor.toString(), await psyParameters.PERCENT_DIVISOR(ZERO_ADDRESS))
       assert.equal(
         expectedBorrowingFeeFloor.toString(),
-        await dfrancParameters.BORROWING_FEE_FLOOR(ZERO_ADDRESS)
+        await psyParameters.BORROWING_FEE_FLOOR(ZERO_ADDRESS)
       )
-      assert.equal(expectedMaxBorrowingFee.toString(), await dfrancParameters.MAX_BORROWING_FEE(ZERO_ADDRESS))
+      assert.equal(expectedMaxBorrowingFee.toString(), await psyParameters.MAX_BORROWING_FEE(ZERO_ADDRESS))
       assert.equal(
         expectedRedemptionFeeFloor.toString(),
-        await dfrancParameters.REDEMPTION_FEE_FLOOR(ZERO_ADDRESS)
+        await psyParameters.REDEMPTION_FEE_FLOOR(ZERO_ADDRESS)
       )
     })
 
     it('setPriceFeed: Owner change parameter - Failing SafeCheck', async () => {
-      await assertRevert(dfrancParameters.setPriceFeed(ZERO_ADDRESS))
+      await assertRevert(psyParameters.setPriceFeed(ZERO_ADDRESS))
     })
 
     it('setPriceFeed: Owner change parameter - Valid Check', async () => {
-      await dfrancParameters.setPriceFeed(priceFeed.address)
+      await psyParameters.setPriceFeed(priceFeed.address)
     })
 
     it('setMCR: Owner change parameter - Failing SafeCheck', async () => {
-      await dfrancParameters.sanitizeParameters(ZERO_ADDRESS)
+      await psyParameters.sanitizeParameters(ZERO_ADDRESS)
 
-      await assertRevert(dfrancParameters.setMCR(ZERO_ADDRESS, MCR_SAFETY_MIN.sub(toBN(1))))
-      await assertRevert(dfrancParameters.setMCR(ZERO_ADDRESS, MCR_SAFETY_MAX.add(toBN(1))))
+      await assertRevert(psyParameters.setMCR(ZERO_ADDRESS, MCR_SAFETY_MIN.sub(toBN(1))))
+      await assertRevert(psyParameters.setMCR(ZERO_ADDRESS, MCR_SAFETY_MAX.add(toBN(1))))
     })
 
     it('setMCR: Owner change parameter - Valid SafeCheck', async () => {
-      await dfrancParameters.sanitizeParameters(ZERO_ADDRESS)
+      await psyParameters.sanitizeParameters(ZERO_ADDRESS)
 
-      await dfrancParameters.setMCR(ZERO_ADDRESS, MCR_SAFETY_MIN)
-      assert.equal(MCR_SAFETY_MIN.toString(), await dfrancParameters.MCR(ZERO_ADDRESS))
+      await psyParameters.setMCR(ZERO_ADDRESS, MCR_SAFETY_MIN)
+      assert.equal(MCR_SAFETY_MIN.toString(), await psyParameters.MCR(ZERO_ADDRESS))
 
-      await dfrancParameters.setMCR(ZERO_ADDRESS, MCR_SAFETY_MAX)
-      assert.equal(MCR_SAFETY_MAX.toString(), await dfrancParameters.MCR(ZERO_ADDRESS))
+      await psyParameters.setMCR(ZERO_ADDRESS, MCR_SAFETY_MAX)
+      assert.equal(MCR_SAFETY_MAX.toString(), await psyParameters.MCR(ZERO_ADDRESS))
     })
 
     it('setCCR: Owner change parameter - Failing SafeCheck', async () => {
-      await dfrancParameters.sanitizeParameters(ZERO_ADDRESS)
+      await psyParameters.sanitizeParameters(ZERO_ADDRESS)
 
-      await assertRevert(dfrancParameters.setCCR(ZERO_ADDRESS, CCR_SAFETY_MIN.sub(toBN(1))))
-      await assertRevert(dfrancParameters.setCCR(ZERO_ADDRESS, CCR_SAFETY_MAX.add(toBN(1))))
+      await assertRevert(psyParameters.setCCR(ZERO_ADDRESS, CCR_SAFETY_MIN.sub(toBN(1))))
+      await assertRevert(psyParameters.setCCR(ZERO_ADDRESS, CCR_SAFETY_MAX.add(toBN(1))))
     })
 
     it('setCCR: Owner change parameter - Valid SafeCheck', async () => {
-      await dfrancParameters.sanitizeParameters(ZERO_ADDRESS)
+      await psyParameters.sanitizeParameters(ZERO_ADDRESS)
 
-      await dfrancParameters.setCCR(ZERO_ADDRESS, CCR_SAFETY_MIN)
-      assert.equal(CCR_SAFETY_MIN.toString(), await dfrancParameters.CCR(ZERO_ADDRESS))
+      await psyParameters.setCCR(ZERO_ADDRESS, CCR_SAFETY_MIN)
+      assert.equal(CCR_SAFETY_MIN.toString(), await psyParameters.CCR(ZERO_ADDRESS))
 
-      await dfrancParameters.setCCR(ZERO_ADDRESS, CCR_SAFETY_MAX)
-      assert.equal(CCR_SAFETY_MAX.toString(), await dfrancParameters.CCR(ZERO_ADDRESS))
+      await psyParameters.setCCR(ZERO_ADDRESS, CCR_SAFETY_MAX)
+      assert.equal(CCR_SAFETY_MAX.toString(), await psyParameters.CCR(ZERO_ADDRESS))
     })
 
     it('setSLSDGasCompensation: Owner change parameter - Failing SafeCheck', async () => {
-      await dfrancParameters.sanitizeParameters(ZERO_ADDRESS)
+      await psyParameters.sanitizeParameters(ZERO_ADDRESS)
 
       await assertRevert(
-        dfrancParameters.setSLSDGasCompensation(ZERO_ADDRESS, SLSD_GAS_COMPENSATION_SAFETY_MIN.sub(toBN(1)))
+        psyParameters.setSLSDGasCompensation(ZERO_ADDRESS, SLSD_GAS_COMPENSATION_SAFETY_MIN.sub(toBN(1)))
       )
       await assertRevert(
-        dfrancParameters.setSLSDGasCompensation(ZERO_ADDRESS, SLSD_GAS_COMPENSATION_SAFETY_MAX.add(toBN(1)))
+        psyParameters.setSLSDGasCompensation(ZERO_ADDRESS, SLSD_GAS_COMPENSATION_SAFETY_MAX.add(toBN(1)))
       )
     })
 
     it('setSLSDGasCompensation: Owner change parameter - Valid SafeCheck', async () => {
-      await dfrancParameters.sanitizeParameters(ZERO_ADDRESS)
+      await psyParameters.sanitizeParameters(ZERO_ADDRESS)
 
-      await dfrancParameters.setSLSDGasCompensation(ZERO_ADDRESS, SLSD_GAS_COMPENSATION_SAFETY_MIN)
+      await psyParameters.setSLSDGasCompensation(ZERO_ADDRESS, SLSD_GAS_COMPENSATION_SAFETY_MIN)
       assert.equal(
         SLSD_GAS_COMPENSATION_SAFETY_MIN.toString(),
-        await dfrancParameters.SLSD_GAS_COMPENSATION(ZERO_ADDRESS)
+        await psyParameters.SLSD_GAS_COMPENSATION(ZERO_ADDRESS)
       )
 
-      await dfrancParameters.setSLSDGasCompensation(ZERO_ADDRESS, SLSD_GAS_COMPENSATION_SAFETY_MAX)
+      await psyParameters.setSLSDGasCompensation(ZERO_ADDRESS, SLSD_GAS_COMPENSATION_SAFETY_MAX)
       assert.equal(
         SLSD_GAS_COMPENSATION_SAFETY_MAX.toString(),
-        await dfrancParameters.SLSD_GAS_COMPENSATION(ZERO_ADDRESS)
+        await psyParameters.SLSD_GAS_COMPENSATION(ZERO_ADDRESS)
       )
     })
 
     it('setMinNetDebt: Owner change parameter - Failing SafeCheck', async () => {
-      await dfrancParameters.sanitizeParameters(ZERO_ADDRESS)
-      await assertRevert(dfrancParameters.setMinNetDebt(ZERO_ADDRESS, MIN_NET_DEBT_SAFETY_MAX.add(toBN(1))))
+      await psyParameters.sanitizeParameters(ZERO_ADDRESS)
+      await assertRevert(psyParameters.setMinNetDebt(ZERO_ADDRESS, MIN_NET_DEBT_SAFETY_MAX.add(toBN(1))))
     })
 
     it('setMinNetDebt: Owner change parameter - Valid SafeCheck', async () => {
-      await dfrancParameters.sanitizeParameters(ZERO_ADDRESS)
+      await psyParameters.sanitizeParameters(ZERO_ADDRESS)
 
-      await dfrancParameters.setMinNetDebt(ZERO_ADDRESS, MIN_NET_DEBT_SAFETY_MIN)
-      assert.equal(MIN_NET_DEBT_SAFETY_MIN.toString(), await dfrancParameters.MIN_NET_DEBT(ZERO_ADDRESS))
+      await psyParameters.setMinNetDebt(ZERO_ADDRESS, MIN_NET_DEBT_SAFETY_MIN)
+      assert.equal(MIN_NET_DEBT_SAFETY_MIN.toString(), await psyParameters.MIN_NET_DEBT(ZERO_ADDRESS))
 
-      await dfrancParameters.setMinNetDebt(ZERO_ADDRESS, MIN_NET_DEBT_SAFETY_MAX)
-      assert.equal(MIN_NET_DEBT_SAFETY_MAX.toString(), await dfrancParameters.MIN_NET_DEBT(ZERO_ADDRESS))
+      await psyParameters.setMinNetDebt(ZERO_ADDRESS, MIN_NET_DEBT_SAFETY_MAX)
+      assert.equal(MIN_NET_DEBT_SAFETY_MAX.toString(), await psyParameters.MIN_NET_DEBT(ZERO_ADDRESS))
     })
 
     it('setPercentDivisor: Owner change parameter - Failing SafeCheck', async () => {
-      await dfrancParameters.sanitizeParameters(ZERO_ADDRESS)
+      await psyParameters.sanitizeParameters(ZERO_ADDRESS)
 
       await assertRevert(
-        dfrancParameters.setPercentDivisor(ZERO_ADDRESS, PERCENT_DIVISOR_SAFETY_MIN.sub(toBN(1)))
+        psyParameters.setPercentDivisor(ZERO_ADDRESS, PERCENT_DIVISOR_SAFETY_MIN.sub(toBN(1)))
       )
       await assertRevert(
-        dfrancParameters.setPercentDivisor(ZERO_ADDRESS, PERCENT_DIVISOR_SAFETY_MAX.add(toBN(1)))
+        psyParameters.setPercentDivisor(ZERO_ADDRESS, PERCENT_DIVISOR_SAFETY_MAX.add(toBN(1)))
       )
     })
 
     it('setPercentDivisor: Owner change parameter - Valid SafeCheck', async () => {
-      await dfrancParameters.setPercentDivisor(ZERO_ADDRESS, PERCENT_DIVISOR_SAFETY_MIN)
+      await psyParameters.setPercentDivisor(ZERO_ADDRESS, PERCENT_DIVISOR_SAFETY_MIN)
       assert.equal(
         PERCENT_DIVISOR_SAFETY_MIN.toString(),
-        await dfrancParameters.PERCENT_DIVISOR(ZERO_ADDRESS)
+        await psyParameters.PERCENT_DIVISOR(ZERO_ADDRESS)
       )
 
-      await dfrancParameters.setPercentDivisor(ZERO_ADDRESS, PERCENT_DIVISOR_SAFETY_MAX)
+      await psyParameters.setPercentDivisor(ZERO_ADDRESS, PERCENT_DIVISOR_SAFETY_MAX)
       assert.equal(
         PERCENT_DIVISOR_SAFETY_MAX.toString(),
-        await dfrancParameters.PERCENT_DIVISOR(ZERO_ADDRESS)
+        await psyParameters.PERCENT_DIVISOR(ZERO_ADDRESS)
       )
     })
 
     it('setBorrowingFeeFloor: Owner change parameter - Failing SafeCheck', async () => {
-      await dfrancParameters.sanitizeParameters(ZERO_ADDRESS)
+      await psyParameters.sanitizeParameters(ZERO_ADDRESS)
 
       await assertRevert(
-        dfrancParameters.setBorrowingFeeFloor(ZERO_ADDRESS, BORROWING_FEE_FLOOR_SAFETY_MAX.add(toBN(1)))
+        psyParameters.setBorrowingFeeFloor(ZERO_ADDRESS, BORROWING_FEE_FLOOR_SAFETY_MAX.add(toBN(1)))
       )
     })
 
@@ -329,21 +329,21 @@ contract('PSYParameters', async (accounts) => {
       const expectedMin = applyDecimalPrecision(BORROWING_FEE_FLOOR_SAFETY_MIN)
       const expectedMax = applyDecimalPrecision(BORROWING_FEE_FLOOR_SAFETY_MAX.sub(toBN(1)))
 
-      await dfrancParameters.sanitizeParameters(ZERO_ADDRESS)
+      await psyParameters.sanitizeParameters(ZERO_ADDRESS)
 
-      await dfrancParameters.setBorrowingFeeFloor(ZERO_ADDRESS, BORROWING_FEE_FLOOR_SAFETY_MIN)
-      assert.equal(expectedMin.toString(), await dfrancParameters.BORROWING_FEE_FLOOR(ZERO_ADDRESS))
+      await psyParameters.setBorrowingFeeFloor(ZERO_ADDRESS, BORROWING_FEE_FLOOR_SAFETY_MIN)
+      assert.equal(expectedMin.toString(), await psyParameters.BORROWING_FEE_FLOOR(ZERO_ADDRESS))
 
-      await dfrancParameters.setMaxBorrowingFee(ZERO_ADDRESS, MAX_BORROWING_FEE_SAFETY_MAX)
-      await dfrancParameters.setBorrowingFeeFloor(ZERO_ADDRESS, BORROWING_FEE_FLOOR_SAFETY_MAX.sub(toBN(1)))
-      assert.equal(expectedMax.toString(), await dfrancParameters.BORROWING_FEE_FLOOR(ZERO_ADDRESS))
+      await psyParameters.setMaxBorrowingFee(ZERO_ADDRESS, MAX_BORROWING_FEE_SAFETY_MAX)
+      await psyParameters.setBorrowingFeeFloor(ZERO_ADDRESS, BORROWING_FEE_FLOOR_SAFETY_MAX.sub(toBN(1)))
+      assert.equal(expectedMax.toString(), await psyParameters.BORROWING_FEE_FLOOR(ZERO_ADDRESS))
     })
 
     it('setMaxBorrowingFee: Owner change parameter - Failing SafeCheck', async () => {
-      await dfrancParameters.sanitizeParameters(ZERO_ADDRESS)
+      await psyParameters.sanitizeParameters(ZERO_ADDRESS)
 
       await assertRevert(
-        dfrancParameters.setMaxBorrowingFee(ZERO_ADDRESS, MAX_BORROWING_FEE_SAFETY_MAX.add(toBN(1)))
+        psyParameters.setMaxBorrowingFee(ZERO_ADDRESS, MAX_BORROWING_FEE_SAFETY_MAX.add(toBN(1)))
       )
     })
 
@@ -351,25 +351,25 @@ contract('PSYParameters', async (accounts) => {
       const expectedMin = applyDecimalPrecision(MAX_BORROWING_FEE_SAFETY_MIN.add(toBN(1)))
       const expectedMax = applyDecimalPrecision(MAX_BORROWING_FEE_SAFETY_MAX)
 
-      await dfrancParameters.sanitizeParameters(ZERO_ADDRESS)
+      await psyParameters.sanitizeParameters(ZERO_ADDRESS)
 
-      await dfrancParameters.setBorrowingFeeFloor(ZERO_ADDRESS, 1)
+      await psyParameters.setBorrowingFeeFloor(ZERO_ADDRESS, 1)
 
-      await dfrancParameters.setMaxBorrowingFee(ZERO_ADDRESS, MAX_BORROWING_FEE_SAFETY_MIN.add(toBN(1)))
-      assert.equal(expectedMin.toString(), await dfrancParameters.MAX_BORROWING_FEE(ZERO_ADDRESS))
+      await psyParameters.setMaxBorrowingFee(ZERO_ADDRESS, MAX_BORROWING_FEE_SAFETY_MIN.add(toBN(1)))
+      assert.equal(expectedMin.toString(), await psyParameters.MAX_BORROWING_FEE(ZERO_ADDRESS))
 
-      await dfrancParameters.setMaxBorrowingFee(ZERO_ADDRESS, MAX_BORROWING_FEE_SAFETY_MAX)
-      assert.equal(expectedMax.toString(), await dfrancParameters.MAX_BORROWING_FEE(ZERO_ADDRESS))
+      await psyParameters.setMaxBorrowingFee(ZERO_ADDRESS, MAX_BORROWING_FEE_SAFETY_MAX)
+      assert.equal(expectedMax.toString(), await psyParameters.MAX_BORROWING_FEE(ZERO_ADDRESS))
     })
 
     it('setRedemptionFeeFloor: Owner change parameter - Failing SafeCheck', async () => {
-      await dfrancParameters.sanitizeParameters(ZERO_ADDRESS)
+      await psyParameters.sanitizeParameters(ZERO_ADDRESS)
 
       await assertRevert(
-        dfrancParameters.setRedemptionFeeFloor(ZERO_ADDRESS, REDEMPTION_FEE_FLOOR_SAFETY_MIN.sub(toBN(1)))
+        psyParameters.setRedemptionFeeFloor(ZERO_ADDRESS, REDEMPTION_FEE_FLOOR_SAFETY_MIN.sub(toBN(1)))
       )
       await assertRevert(
-        dfrancParameters.setRedemptionFeeFloor(ZERO_ADDRESS, REDEMPTION_FEE_FLOOR_SAFETY_MAX.add(toBN(1)))
+        psyParameters.setRedemptionFeeFloor(ZERO_ADDRESS, REDEMPTION_FEE_FLOOR_SAFETY_MAX.add(toBN(1)))
       )
     })
 
@@ -377,18 +377,18 @@ contract('PSYParameters', async (accounts) => {
       const expectedMin = applyDecimalPrecision(REDEMPTION_FEE_FLOOR_SAFETY_MIN)
       const expectedMax = applyDecimalPrecision(REDEMPTION_FEE_FLOOR_SAFETY_MAX)
 
-      await dfrancParameters.sanitizeParameters(ZERO_ADDRESS)
+      await psyParameters.sanitizeParameters(ZERO_ADDRESS)
 
-      await dfrancParameters.setRedemptionFeeFloor(ZERO_ADDRESS, REDEMPTION_FEE_FLOOR_SAFETY_MIN)
-      assert.equal(expectedMin.toString(), await dfrancParameters.REDEMPTION_FEE_FLOOR(ZERO_ADDRESS))
+      await psyParameters.setRedemptionFeeFloor(ZERO_ADDRESS, REDEMPTION_FEE_FLOOR_SAFETY_MIN)
+      assert.equal(expectedMin.toString(), await psyParameters.REDEMPTION_FEE_FLOOR(ZERO_ADDRESS))
 
-      await dfrancParameters.setRedemptionFeeFloor(ZERO_ADDRESS, REDEMPTION_FEE_FLOOR_SAFETY_MAX)
-      assert.equal(expectedMax.toString(), await dfrancParameters.REDEMPTION_FEE_FLOOR(ZERO_ADDRESS))
+      await psyParameters.setRedemptionFeeFloor(ZERO_ADDRESS, REDEMPTION_FEE_FLOOR_SAFETY_MAX)
+      assert.equal(expectedMax.toString(), await psyParameters.REDEMPTION_FEE_FLOOR(ZERO_ADDRESS))
     })
 
     it('setCollateralParameters: Owner change parameter - Failing SafeCheck', async () => {
       await assertRevert(
-        dfrancParameters.setCollateralParameters(
+        psyParameters.setCollateralParameters(
           ZERO_ADDRESS,
           MCR_SAFETY_MAX.add(toBN(1)),
           CCR,
@@ -402,7 +402,7 @@ contract('PSYParameters', async (accounts) => {
       )
 
       await assertRevert(
-        dfrancParameters.setCollateralParameters(
+        psyParameters.setCollateralParameters(
           ZERO_ADDRESS,
           MCR,
           CCR_SAFETY_MAX.add(toBN(1)),
@@ -416,7 +416,7 @@ contract('PSYParameters', async (accounts) => {
       )
 
       await assertRevert(
-        dfrancParameters.setCollateralParameters(
+        psyParameters.setCollateralParameters(
           ZERO_ADDRESS,
           MCR,
           CCR,
@@ -430,7 +430,7 @@ contract('PSYParameters', async (accounts) => {
       )
 
       await assertRevert(
-        dfrancParameters.setCollateralParameters(
+        psyParameters.setCollateralParameters(
           ZERO_ADDRESS,
           MCR,
           CCR,
@@ -444,7 +444,7 @@ contract('PSYParameters', async (accounts) => {
       )
 
       await assertRevert(
-        dfrancParameters.setCollateralParameters(
+        psyParameters.setCollateralParameters(
           ZERO_ADDRESS,
           MCR,
           CCR,
@@ -458,7 +458,7 @@ contract('PSYParameters', async (accounts) => {
       )
 
       await assertRevert(
-        dfrancParameters.setCollateralParameters(
+        psyParameters.setCollateralParameters(
           ZERO_ADDRESS,
           MCR,
           CCR,
@@ -472,7 +472,7 @@ contract('PSYParameters', async (accounts) => {
       )
 
       await assertRevert(
-        dfrancParameters.setCollateralParameters(
+        psyParameters.setCollateralParameters(
           ZERO_ADDRESS,
           MCR,
           CCR,
@@ -486,7 +486,7 @@ contract('PSYParameters', async (accounts) => {
       )
 
       await assertRevert(
-        dfrancParameters.setCollateralParameters(
+        psyParameters.setCollateralParameters(
           ZERO_ADDRESS,
           MCR,
           CCR,
@@ -514,7 +514,7 @@ contract('PSYParameters', async (accounts) => {
       const expectedMaxBorrowingFee = applyDecimalPrecision(newMaxBorrowingFee)
       const expectedRedemptionFeeFloor = applyDecimalPrecision(newRedemptionFeeFloor)
 
-      await dfrancParameters.setCollateralParameters(
+      await psyParameters.setCollateralParameters(
         ZERO_ADDRESS,
         newMCR,
         newCCR,
@@ -527,49 +527,49 @@ contract('PSYParameters', async (accounts) => {
         { from: owner }
       )
 
-      assert.equal(newMCR.toString(), await dfrancParameters.MCR(ZERO_ADDRESS))
-      assert.equal(newCCR.toString(), await dfrancParameters.CCR(ZERO_ADDRESS))
-      assert.equal(newGasComp.toString(), await dfrancParameters.SLSD_GAS_COMPENSATION(ZERO_ADDRESS))
-      assert.equal(newMinNetDebt.toString(), await dfrancParameters.MIN_NET_DEBT(ZERO_ADDRESS))
-      assert.equal(newPercentDivisor.toString(), await dfrancParameters.PERCENT_DIVISOR(ZERO_ADDRESS))
+      assert.equal(newMCR.toString(), await psyParameters.MCR(ZERO_ADDRESS))
+      assert.equal(newCCR.toString(), await psyParameters.CCR(ZERO_ADDRESS))
+      assert.equal(newGasComp.toString(), await psyParameters.SLSD_GAS_COMPENSATION(ZERO_ADDRESS))
+      assert.equal(newMinNetDebt.toString(), await psyParameters.MIN_NET_DEBT(ZERO_ADDRESS))
+      assert.equal(newPercentDivisor.toString(), await psyParameters.PERCENT_DIVISOR(ZERO_ADDRESS))
       assert.equal(
         expectedBorrowingFeeFloor.toString(),
-        await dfrancParameters.BORROWING_FEE_FLOOR(ZERO_ADDRESS)
+        await psyParameters.BORROWING_FEE_FLOOR(ZERO_ADDRESS)
       )
-      assert.equal(expectedMaxBorrowingFee.toString(), await dfrancParameters.MAX_BORROWING_FEE(ZERO_ADDRESS))
+      assert.equal(expectedMaxBorrowingFee.toString(), await psyParameters.MAX_BORROWING_FEE(ZERO_ADDRESS))
       assert.equal(
         expectedRedemptionFeeFloor.toString(),
-        await dfrancParameters.REDEMPTION_FEE_FLOOR(ZERO_ADDRESS)
+        await psyParameters.REDEMPTION_FEE_FLOOR(ZERO_ADDRESS)
       )
 
-      await dfrancParameters.setAsDefault(ZERO_ADDRESS)
+      await psyParameters.setAsDefault(ZERO_ADDRESS)
 
-      assert.equal(MCR.toString(), await dfrancParameters.MCR(ZERO_ADDRESS))
-      assert.equal(CCR.toString(), await dfrancParameters.CCR(ZERO_ADDRESS))
-      assert.equal(GAS_COMPENSATION.toString(), await dfrancParameters.SLSD_GAS_COMPENSATION(ZERO_ADDRESS))
-      assert.equal(MIN_NET_DEBT.toString(), await dfrancParameters.MIN_NET_DEBT(ZERO_ADDRESS))
-      assert.equal(PERCENT_DIVISOR.toString(), await dfrancParameters.PERCENT_DIVISOR(ZERO_ADDRESS))
-      assert.equal(BORROWING_FEE_FLOOR.toString(), await dfrancParameters.BORROWING_FEE_FLOOR(ZERO_ADDRESS))
-      assert.equal(MAX_BORROWING_FEE.toString(), await dfrancParameters.MAX_BORROWING_FEE(ZERO_ADDRESS))
-      assert.equal(REDEMPTION_FEE_FLOOR.toString(), await dfrancParameters.REDEMPTION_FEE_FLOOR(ZERO_ADDRESS))
+      assert.equal(MCR.toString(), await psyParameters.MCR(ZERO_ADDRESS))
+      assert.equal(CCR.toString(), await psyParameters.CCR(ZERO_ADDRESS))
+      assert.equal(GAS_COMPENSATION.toString(), await psyParameters.SLSD_GAS_COMPENSATION(ZERO_ADDRESS))
+      assert.equal(MIN_NET_DEBT.toString(), await psyParameters.MIN_NET_DEBT(ZERO_ADDRESS))
+      assert.equal(PERCENT_DIVISOR.toString(), await psyParameters.PERCENT_DIVISOR(ZERO_ADDRESS))
+      assert.equal(BORROWING_FEE_FLOOR.toString(), await psyParameters.BORROWING_FEE_FLOOR(ZERO_ADDRESS))
+      assert.equal(MAX_BORROWING_FEE.toString(), await psyParameters.MAX_BORROWING_FEE(ZERO_ADDRESS))
+      assert.equal(REDEMPTION_FEE_FLOOR.toString(), await psyParameters.REDEMPTION_FEE_FLOOR(ZERO_ADDRESS))
     })
 
     it('openTrove(): Borrowing at zero base rate charges minimum fee with different borrowingFeeFloor', async () => {
-      await dfrancParameters.sanitizeParameters(ZERO_ADDRESS)
-      await dfrancParameters.sanitizeParameters(erc20.address)
+      await psyParameters.sanitizeParameters(ZERO_ADDRESS)
+      await psyParameters.sanitizeParameters(erc20.address)
 
-      await dfrancParameters.setBorrowingFeeFloor(ZERO_ADDRESS, BORROWING_FEE_FLOOR_SAFETY_MIN)
-      await dfrancParameters.setBorrowingFeeFloor(erc20.address, BORROWING_FEE_FLOOR_SAFETY_MIN)
-      await dfrancParameters.setMaxBorrowingFee(erc20.address, MAX_BORROWING_FEE_SAFETY_MAX)
-      await dfrancParameters.setBorrowingFeeFloor(erc20.address, BORROWING_FEE_FLOOR_SAFETY_MAX.sub(toBN(1)))
+      await psyParameters.setBorrowingFeeFloor(ZERO_ADDRESS, BORROWING_FEE_FLOOR_SAFETY_MIN)
+      await psyParameters.setBorrowingFeeFloor(erc20.address, BORROWING_FEE_FLOOR_SAFETY_MIN)
+      await psyParameters.setMaxBorrowingFee(erc20.address, MAX_BORROWING_FEE_SAFETY_MAX)
+      await psyParameters.setBorrowingFeeFloor(erc20.address, BORROWING_FEE_FLOOR_SAFETY_MAX.sub(toBN(1)))
 
       assert.equal(
         applyDecimalPrecision(BORROWING_FEE_FLOOR_SAFETY_MIN).toString(),
-        await dfrancParameters.BORROWING_FEE_FLOOR(ZERO_ADDRESS)
+        await psyParameters.BORROWING_FEE_FLOOR(ZERO_ADDRESS)
       )
       assert.equal(
         applyDecimalPrecision(BORROWING_FEE_FLOOR_SAFETY_MAX.sub(toBN(1))).toString(),
-        await dfrancParameters.BORROWING_FEE_FLOOR(erc20.address)
+        await psyParameters.BORROWING_FEE_FLOOR(erc20.address)
       )
 
       await openTrove({
@@ -618,10 +618,10 @@ contract('PSYParameters', async (accounts) => {
       const _SLSDFee = toBN(th.getEventArgByName(txC, 'SLSDBorrowingFeePaid', '_SLSDFee'))
       const _USDVFee_Asset = toBN(th.getEventArgByName(txC_Asset, 'SLSDBorrowingFeePaid', '_SLSDFee'))
 
-      const expectedFee = (await dfrancParameters.BORROWING_FEE_FLOOR(ZERO_ADDRESS))
+      const expectedFee = (await psyParameters.BORROWING_FEE_FLOOR(ZERO_ADDRESS))
         .mul(toBN(USDVRequest))
         .div(toBN(dec(1, 18)))
-      const expectedFee_Asset = (await dfrancParameters.BORROWING_FEE_FLOOR(erc20.address))
+      const expectedFee_Asset = (await psyParameters.BORROWING_FEE_FLOOR(erc20.address))
         .mul(toBN(USDVRequest))
         .div(toBN(dec(1, 18)))
       assert.isTrue(_SLSDFee.eq(expectedFee))

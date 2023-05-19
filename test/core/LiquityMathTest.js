@@ -1,13 +1,13 @@
 const PSYMathTester = artifacts.require('./PSYMathTester.sol')
 
 contract('LiquityMath', async (accounts) => {
-  let dfrancMathTester
+  let psyMathTester
   beforeEach('deploy tester', async () => {
-    dfrancMathTester = await PSYMathTester.new()
+    psyMathTester = await PSYMathTester.new()
   })
 
   const checkFunction = async (func, cond, params) => {
-    assert.equal(await dfrancMathTester[func](...params), cond(...params))
+    assert.equal(await psyMathTester[func](...params), cond(...params))
   }
 
   it('max works if a > b', async () => {

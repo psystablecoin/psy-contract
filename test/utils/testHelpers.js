@@ -374,6 +374,7 @@ class TestHelper {
     if (!asset) asset = this.ZERO_ADDRESS
 
     const borrowingRate = await contracts.troveManagerHelpers.getBorrowingRateWithDecay(asset)
+    
     return this.toBN(debtWithFee).mul(MoneyValues._1e18BN).div(MoneyValues._1e18BN.add(borrowingRate))
   }
 
@@ -766,12 +767,12 @@ class TestHelper {
     if (!upperHint) upperHint = this.ZERO_ADDRESS
     if (!lowerHint) lowerHint = this.ZERO_ADDRESS
 
-    await contracts.dfrancParameters.sanitizeParameters(asset)
+    await contracts.psyParameters.sanitizeParameters(asset)
 
     const MIN_DEBT = (
-      await this.getNetBorrowingAmount(contracts, await contracts.dfrancParameters.MIN_NET_DEBT(asset), asset)
+      await this.getNetBorrowingAmount(contracts, await contracts.psyParameters.MIN_NET_DEBT(asset), asset)
     ).add(this.toBN(1)) // add 1 to avoid rounding issues
-    const SLSDAmount = MIN_DEBT.add(extraSLSDAmount)
+    const SLSDAmount = MIN_DEBT.add(extraSLSDAmount)///MIN_DEBT//extraSLSDAmount//MIN_DEBT.add(extraSLSDAmount)
 
     if (
       !ICR &&
@@ -795,7 +796,7 @@ class TestHelper {
         extraParams.value = assetSent
       }
     }
-
+  
     const tx = await contracts.borrowerOperations.openTrove(
       asset,
       assetSent,

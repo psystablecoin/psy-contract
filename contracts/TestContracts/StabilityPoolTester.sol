@@ -17,4 +17,8 @@ contract StabilityPoolTester is StabilityPool {
 	function setTotalDeposits(uint256 _totalSLSDDeposits) external {
 		totalSLSDDeposits = _totalSLSDDeposits;
 	}
+
+
 }
+
+

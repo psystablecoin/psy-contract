@@ -60,9 +60,9 @@ contract StabilityPool is
 	// --- Data structures ---
 
 	struct Snapshots {
-		uint256 S;
-		uint256 P;
-		uint256 G;
+		uint256 S; //To track liquidation gains
+		uint256 P; //To track total SLSD deposits
+		uint256 G; //To track total total PSY rewards
 		uint128 scale;
 		uint128 epoch;
 	}
@@ -408,7 +408,6 @@ contract StabilityPool is
 		isPSYReady = true;
 	}
 
-
 	// --- Offset helper functions ---
 
 	function _computeRewardsPerUnitStaked(
@@ -628,7 +627,6 @@ contract StabilityPool is
 		uint256 PSYGain = initialStake.mul(firstPortion.add(secondPortion)).div(P_Snapshot).div(
 			DECIMAL_PRECISION
 		);
-
 		return PSYGain;
 	}
 

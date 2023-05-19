@@ -112,12 +112,12 @@ contract('SLSDToken', async (accounts) => {
 
     it("name(): returns the token's name", async () => {
       const name = await SLSDTokenTester.name()
-      assert.equal(name, 'Defi Franc')
+      assert.equal(name, 'PSY Stablecoin: sLSD')
     })
 
     it("symbol(): returns the token's symbol", async () => {
       const symbol = await SLSDTokenTester.symbol()
-      assert.equal(symbol, 'SLSD')
+      assert.equal(symbol, 'sLSD')
     })
 
     it('decimal(): returns the number of decimal digits used', async () => {
