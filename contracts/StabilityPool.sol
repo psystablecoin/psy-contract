@@ -48,6 +48,8 @@ contract StabilityPool is
 
 	ICommunityIssuance public communityIssuance;
 
+	bool isPSYReady;
+
 	address internal assetAddress;
 
 	uint256 internal assetBalance; // deposited ether tracker
@@ -132,7 +134,7 @@ contract StabilityPool is
 		address _slsdTokenAddress,
 		address _sortedTrovesAddress,
 		address _communityIssuanceAddress,
-		address _dfrancParamsAddress
+		address _psyParamsAddress
 	) external initializer onlyOwner {
 		require(!isInitialized, "Already initialized");
 		checkContract(_borrowerOperationsAddress);
@@ -140,8 +142,7 @@ contract StabilityPool is
 		checkContract(_troveManagerHelpersAddress);
 		checkContract(_slsdTokenAddress);
 		checkContract(_sortedTrovesAddress);
-		checkContract(_communityIssuanceAddress);
-		checkContract(_dfrancParamsAddress);
+		checkContract(_psyParamsAddress);
 
 		isInitialized = true;
 
@@ -155,8 +156,13 @@ contract StabilityPool is
 		troveManagerHelpers = ITroveManagerHelpers(_troveManagerHelpersAddress);
 		slsdToken = ISLSDToken(_slsdTokenAddress);
 		sortedTroves = ISortedTroves(_sortedTrovesAddress);
-		communityIssuance = ICommunityIssuance(_communityIssuanceAddress);
-		setPSYParameters(_dfrancParamsAddress);
+		setPSYParameters(_psyParamsAddress);
+
+		if (_communityIssuanceAddress != address(0)) {
+			checkContract(_communityIssuanceAddress);
+			communityIssuance = ICommunityIssuance(_communityIssuanceAddress);
+			isPSYReady = true;
+		}
 
 		P = DECIMAL_PRECISION;
 
@@ -190,17 +196,18 @@ contract StabilityPool is
 
 		uint256 initialDeposit = deposits[msg.sender];
 
-		ICommunityIssuance communityIssuanceCached = communityIssuance;
-		_triggerPSYIssuance(communityIssuanceCached);
-
 		uint256 depositorAssetGain = getDepositorAssetGain(msg.sender);
 		uint256 depositorAssetGainEther = getDepositorAssetGain1e18(msg.sender);
 
 		uint256 compoundedSLSDDeposit = getCompoundedSLSDDeposit(msg.sender);
 		uint256 SLSDLoss = initialDeposit.sub(compoundedSLSDDeposit); // Needed only for event log
 
-		// First pay out any PSY gains
-		_payOutPSYGains(communityIssuanceCached, msg.sender);
+		if (isPSYReady) {
+			// First pay out any PSY gains
+			ICommunityIssuance communityIssuanceCached = communityIssuance;
+			_triggerPSYIssuance(communityIssuanceCached);
+			_payOutPSYGains(communityIssuanceCached, msg.sender);
+		}
 
 		// Update System stake
 		uint256 compoundedStake = getCompoundedTotalStake();
@@ -234,9 +241,7 @@ contract StabilityPool is
 		uint256 initialDeposit = deposits[msg.sender];
 		_requireUserHasDeposit(initialDeposit);
 
-		ICommunityIssuance communityIssuanceCached = communityIssuance;
-
-		_triggerPSYIssuance(communityIssuanceCached);
+		
 
 		uint256 depositorAssetGain = getDepositorAssetGain(msg.sender);
 		uint256 depositorAssetGainEther = getDepositorAssetGain1e18(msg.sender);
@@ -245,9 +250,13 @@ contract StabilityPool is
 		uint256 SLSDtoWithdraw = PSYMath._min(_amount, compoundedSLSDDeposit);
 		uint256 SLSDLoss = initialDeposit.sub(compoundedSLSDDeposit); // Needed only for event log
 
-		// First pay out any PSY gains
-		_payOutPSYGains(communityIssuanceCached, msg.sender);
-
+		if (isPSYReady) {
+			// First pay out any PSY gains
+			ICommunityIssuance communityIssuanceCached = communityIssuance;
+			_triggerPSYIssuance(communityIssuanceCached);	
+			_payOutPSYGains(communityIssuanceCached, msg.sender);
+		}
+		
 		// Update System stake
 		uint256 compoundedStake = getCompoundedTotalStake();
 		uint256 newStake = compoundedStake.sub(SLSDtoWithdraw);
@@ -278,17 +287,17 @@ contract StabilityPool is
 		_requireUserHasTrove(msg.sender);
 		_requireUserHasETHGain(msg.sender);
 
-		ICommunityIssuance communityIssuanceCached = communityIssuance;
-
-		_triggerPSYIssuance(communityIssuanceCached);
-
 		uint256 depositorAssetGain = getDepositorAssetGain1e18(msg.sender);
 
 		uint256 compoundedSLSDDeposit = getCompoundedSLSDDeposit(msg.sender);
 		uint256 SLSDLoss = initialDeposit.sub(compoundedSLSDDeposit); // Needed only for event log
 
-		// First pay out any PSY gains
-		_payOutPSYGains(communityIssuanceCached, msg.sender);
+		if (isPSYReady) {
+			// First pay out any PSY gains
+			ICommunityIssuance communityIssuanceCached = communityIssuance;
+			_triggerPSYIssuance(communityIssuanceCached);
+			_payOutPSYGains(communityIssuanceCached, msg.sender);
+		}
 
 		// Update System stake
 		uint256 compoundedSystemStake = getCompoundedTotalStake();
@@ -377,7 +386,7 @@ contract StabilityPool is
 			return;
 		}
 
-		_triggerPSYIssuance(communityIssuance);
+		if (isPSYReady) { _triggerPSYIssuance(communityIssuance); }
 
 		(
 			uint256 AssetGainPerUnitStaked,
@@ -388,6 +397,17 @@ contract StabilityPool is
 
 		_moveOffsetCollAndDebt(_collToAdd, _debtToOffset);
 	}
+
+	/*
+	 * Add PSY token modules later if it is not added at launch
+	 */
+	function addPSYModules(address _communityIssuanceAddress) external onlyOwner {
+		require(!isPSYReady,"PSY modules already registered");
+		checkContract(_communityIssuanceAddress);
+		communityIssuance = ICommunityIssuance(_communityIssuanceAddress);
+		isPSYReady = true;
+	}
+
 
 	// --- Offset helper functions ---
 
@@ -488,7 +508,7 @@ contract StabilityPool is
 	}
 
 	function _moveOffsetCollAndDebt(uint256 _collToAdd, uint256 _debtToOffset) internal {
-		IActivePool activePoolCached = dfrancParams.activePool();
+		IActivePool activePoolCached = psyParams.activePool();
 
 		// Cancel the liquidated SLSD debt with the SLSD in the stability pool
 		activePoolCached.decreaseSLSDDebt(assetAddress, _debtToOffset);
@@ -794,7 +814,7 @@ contract StabilityPool is
 
 	function _requireCallerIsActivePool() internal view {
 		require(
-			msg.sender == address(dfrancParams.activePool()),
+			msg.sender == address(psyParams.activePool()),
 			"StabilityPool: Caller is not ActivePool"
 		);
 	}
@@ -807,11 +827,11 @@ contract StabilityPool is
 	}
 
 	function _requireNoUnderCollateralizedTroves() public {
-		uint256 price = dfrancParams.priceFeed().fetchPrice(assetAddress);
+		uint256 price = psyParams.priceFeed().fetchPrice(assetAddress);
 		address lowestTrove = sortedTroves.getLast(assetAddress);
 		uint256 ICR = troveManagerHelpers.getCurrentICR(assetAddress, lowestTrove, price);
 		require(
-			ICR >= dfrancParams.MCR(assetAddress),
+			ICR >= psyParams.MCR(assetAddress),
 			"StabilityPool: Cannot withdraw while there are troves with ICR < MCR"
 		);
 	}

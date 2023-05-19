@@ -26,6 +26,8 @@ contract TroveManager is PSYBase, CheckContract, Initializable, ITroveManager {
 
 	IPSYStaking public override psyStaking;
 
+	bool isPSYReady;
+
 	// A doubly linked list of Troves, sorted by their sorted by their collateral ratios
 	ISortedTroves public sortedTroves;
 
@@ -53,17 +55,17 @@ contract TroveManager is PSYBase, CheckContract, Initializable, ITroveManager {
 		address _slsdTokenAddress,
 		address _sortedTrovesAddress,
 		address _psyStakingAddress,
-		address _dfrancParamsAddress,
+		address _psyParamsAddress,
 		address _troveManagerHelpersAddress
-	) external override initializer {
+	) external override initializer onlyOwner {
 		require(!isInitialized, "AI");
 		checkContract(_stabilityPoolManagerAddress);
 		checkContract(_gasPoolAddress);
 		checkContract(_collSurplusPoolAddress);
 		checkContract(_slsdTokenAddress);
 		checkContract(_sortedTrovesAddress);
-		checkContract(_psyStakingAddress);
-		checkContract(_dfrancParamsAddress);
+		
+		checkContract(_psyParamsAddress);
 		checkContract(_troveManagerHelpersAddress);
 		isInitialized = true;
 
@@ -72,10 +74,15 @@ contract TroveManager is PSYBase, CheckContract, Initializable, ITroveManager {
 		collSurplusPool = ICollSurplusPool(_collSurplusPoolAddress);
 		slsdToken = ISLSDToken(_slsdTokenAddress);
 		sortedTroves = ISortedTroves(_sortedTrovesAddress);
-		psyStaking = IPSYStaking(_psyStakingAddress);
 		troveManagerHelpers = ITroveManagerHelpers(_troveManagerHelpersAddress);
 
-		setPSYParameters(_dfrancParamsAddress);
+		if (_psyStakingAddress != address(0)) {
+			checkContract(_psyStakingAddress);
+			psyStaking = IPSYStaking(_psyStakingAddress);
+			isPSYReady = true;
+		}
+		
+		setPSYParameters(_psyParamsAddress);
 	}
 
 	// --- Trove Getter functions ---
@@ -129,7 +136,7 @@ contract TroveManager is PSYBase, CheckContract, Initializable, ITroveManager {
 			_asset,
 			singleLiquidation.entireTroveColl
 		);
-		singleLiquidation.SLSDGasCompensation = dfrancParams.SLSD_GAS_COMPENSATION(_asset);
+		singleLiquidation.SLSDGasCompensation = psyParams.SLSD_GAS_COMPENSATION(_asset);
 		uint256 collToLiquidate = singleLiquidation.entireTroveColl.sub(
 			singleLiquidation.collGasCompensation
 		);
@@ -187,13 +194,13 @@ contract TroveManager is PSYBase, CheckContract, Initializable, ITroveManager {
 			_asset,
 			singleLiquidation.entireTroveColl
 		);
-		singleLiquidation.SLSDGasCompensation = dfrancParams.SLSD_GAS_COMPENSATION(_asset);
+		singleLiquidation.SLSDGasCompensation = psyParams.SLSD_GAS_COMPENSATION(_asset);
 		vars.collToLiquidate = singleLiquidation.entireTroveColl.sub(
 			singleLiquidation.collGasCompensation
 		);
 
 		// If ICR <= 100%, purely redistribute the Trove across all active Troves
-		if (_ICR <= dfrancParams._100pct()) {
+		if (_ICR <= psyParams._100pct()) {
 			troveManagerHelpers.movePendingTroveRewardsToActivePool(
 				_asset,
 				_activePool,
@@ -230,7 +237,7 @@ contract TroveManager is PSYBase, CheckContract, Initializable, ITroveManager {
 			);
 
 			// If 100% < ICR < MCR, offset as much as possible, and redistribute the remainder
-		} else if ((_ICR > dfrancParams._100pct()) && (_ICR < dfrancParams.MCR(_asset))) {
+		} else if ((_ICR > psyParams._100pct()) && (_ICR < psyParams.MCR(_asset))) {
 			troveManagerHelpers.movePendingTroveRewardsToActivePool(
 				_asset,
 				_activePool,
@@ -278,7 +285,7 @@ contract TroveManager is PSYBase, CheckContract, Initializable, ITroveManager {
 			 * The remainder due to the capped rate will be claimable as collateral surplus.
 			 */
 		} else if (
-			(_ICR >= dfrancParams.MCR(_asset)) &&
+			(_ICR >= psyParams.MCR(_asset)) &&
 			(_ICR < _TCR) &&
 			(singleLiquidation.entireTroveDebt <= _SLSDInStabPool)
 		) {
@@ -383,10 +390,10 @@ contract TroveManager is PSYBase, CheckContract, Initializable, ITroveManager {
 	) internal view returns (LiquidationValues memory singleLiquidation) {
 		singleLiquidation.entireTroveDebt = _entireTroveDebt;
 		singleLiquidation.entireTroveColl = _entireTroveColl;
-		uint256 cappedCollPortion = _entireTroveDebt.mul(dfrancParams.MCR(_asset)).div(_price);
+		uint256 cappedCollPortion = _entireTroveDebt.mul(psyParams.MCR(_asset)).div(_price);
 
 		singleLiquidation.collGasCompensation = _getCollGasCompensation(_asset, cappedCollPortion);
-		singleLiquidation.SLSDGasCompensation = dfrancParams.SLSD_GAS_COMPENSATION(_asset);
+		singleLiquidation.SLSDGasCompensation = psyParams.SLSD_GAS_COMPENSATION(_asset);
 
 		singleLiquidation.debtToOffset = _entireTroveDebt;
 		singleLiquidation.collToSendToSP = cappedCollPortion.sub(
@@ -403,8 +410,8 @@ contract TroveManager is PSYBase, CheckContract, Initializable, ITroveManager {
 	 */
 	function liquidateTroves(address _asset, uint256 _n) external override {
 		ContractsCache memory contractsCache = ContractsCache(
-			dfrancParams.activePool(),
-			dfrancParams.defaultPool(),
+			psyParams.activePool(),
+			psyParams.defaultPool(),
 			ISLSDToken(address(0)),
 			IPSYStaking(address(0)),
 			sortedTroves,
@@ -417,7 +424,7 @@ contract TroveManager is PSYBase, CheckContract, Initializable, ITroveManager {
 
 		LiquidationTotals memory totals;
 
-		vars.price = dfrancParams.priceFeed().fetchPrice(_asset);
+		vars.price = psyParams.priceFeed().fetchPrice(_asset);
 		vars.SLSDInStabPool = stabilityPoolCached.getTotalSLSDDeposits();
 		vars.recoveryModeAtStart = troveManagerHelpers.checkRecoveryMode(_asset, vars.price);
 
@@ -529,7 +536,7 @@ contract TroveManager is PSYBase, CheckContract, Initializable, ITroveManager {
 
 			if (!vars.backToNormalMode) {
 				// Break the loop if ICR is greater than MCR and Stability Pool is empty
-				if (vars.ICR >= dfrancParams.MCR(_asset) && vars.remainingSLSDInStabPool == 0) {
+				if (vars.ICR >= psyParams.MCR(_asset) && vars.remainingSLSDInStabPool == 0) {
 					break;
 				}
 
@@ -570,7 +577,7 @@ contract TroveManager is PSYBase, CheckContract, Initializable, ITroveManager {
 					vars.entireSystemDebt,
 					assetVars._price
 				);
-			} else if (vars.backToNormalMode && vars.ICR < dfrancParams.MCR(_asset)) {
+			} else if (vars.backToNormalMode && vars.ICR < psyParams.MCR(_asset)) {
 				singleLiquidation = _liquidateNormalMode(
 					assetVars._asset,
 					_contractsCache.activePool,
@@ -609,7 +616,7 @@ contract TroveManager is PSYBase, CheckContract, Initializable, ITroveManager {
 			vars.user = sortedTrovesCached.getLast(_asset);
 			vars.ICR = troveManagerHelpers.getCurrentICR(_asset, vars.user, _price);
 
-			if (vars.ICR < dfrancParams.MCR(_asset)) {
+			if (vars.ICR < psyParams.MCR(_asset)) {
 				singleLiquidation = _liquidateNormalMode(
 					_asset,
 					_activePool,
@@ -634,15 +641,15 @@ contract TroveManager is PSYBase, CheckContract, Initializable, ITroveManager {
 	function batchLiquidateTroves(address _asset, address[] memory _troveArray) public override {
 		require(_troveArray.length != 0, "CA");
 
-		IActivePool activePoolCached = dfrancParams.activePool();
-		IDefaultPool defaultPoolCached = dfrancParams.defaultPool();
+		IActivePool activePoolCached = psyParams.activePool();
+		IDefaultPool defaultPoolCached = psyParams.defaultPool();
 		IStabilityPool stabilityPoolCached = stabilityPoolManager.getAssetStabilityPool(_asset);
 
 		LocalVariables_OuterLiquidationFunction memory vars;
 		LiquidationTotals memory totals;
 
 		vars.SLSDInStabPool = stabilityPoolCached.getTotalSLSDDeposits();
-		vars.price = dfrancParams.priceFeed().fetchPrice(_asset);
+		vars.price = psyParams.priceFeed().fetchPrice(_asset);
 
 		vars.recoveryModeAtStart = _checkRecoveryMode(_asset, vars.price);
 
@@ -743,7 +750,7 @@ contract TroveManager is PSYBase, CheckContract, Initializable, ITroveManager {
 
 			if (!vars.backToNormalMode) {
 				// Skip this trove if ICR is greater than MCR and Stability Pool is empty
-				if (vars.ICR >= dfrancParams.MCR(_asset) && vars.remainingSLSDInStabPool == 0) {
+				if (vars.ICR >= psyParams.MCR(_asset) && vars.remainingSLSDInStabPool == 0) {
 					continue;
 				}
 
@@ -784,7 +791,7 @@ contract TroveManager is PSYBase, CheckContract, Initializable, ITroveManager {
 					vars.entireSystemDebt,
 					_price
 				);
-			} else if (vars.backToNormalMode && vars.ICR < dfrancParams.MCR(_asset)) {
+			} else if (vars.backToNormalMode && vars.ICR < psyParams.MCR(_asset)) {
 				singleLiquidation = _liquidateNormalMode(
 					_asset,
 					_activePool,
@@ -819,7 +826,7 @@ contract TroveManager is PSYBase, CheckContract, Initializable, ITroveManager {
 			vars.user = _troveArray[vars.i];
 			vars.ICR = troveManagerHelpers.getCurrentICR(_asset, vars.user, _price);
 
-			if (vars.ICR < dfrancParams.MCR(_asset)) {
+			if (vars.ICR < psyParams.MCR(_asset)) {
 				singleLiquidation = _liquidateNormalMode(
 					_asset,
 					_activePool,
@@ -912,7 +919,7 @@ contract TroveManager is PSYBase, CheckContract, Initializable, ITroveManager {
 		singleRedemption.SLSDLot = PSYMath._min(
 			_maxSLSDamount,
 			troveManagerHelpers.getTroveDebt(vars._asset, vars._borrower).sub(
-				dfrancParams.SLSD_GAS_COMPENSATION(_asset)
+				psyParams.SLSD_GAS_COMPENSATION(_asset)
 			)
 		);
 
@@ -927,7 +934,7 @@ contract TroveManager is PSYBase, CheckContract, Initializable, ITroveManager {
 			singleRedemption.ETHLot
 		);
 
-		if (newDebt == dfrancParams.SLSD_GAS_COMPENSATION(_asset)) {
+		if (newDebt == psyParams.SLSD_GAS_COMPENSATION(_asset)) {
 			// No debt left in the Trove (except for the liquidation reserve), therefore the trove gets closed
 			troveManagerHelpers.removeStake(vars._asset, vars._borrower);
 			troveManagerHelpers.closeTrove(
@@ -939,7 +946,7 @@ contract TroveManager is PSYBase, CheckContract, Initializable, ITroveManager {
 				vars._asset,
 				_contractsCache,
 				vars._borrower,
-				dfrancParams.SLSD_GAS_COMPENSATION(vars._asset),
+				psyParams.SLSD_GAS_COMPENSATION(vars._asset),
 				newColl
 			);
 			emit TroveUpdated(
@@ -961,7 +968,7 @@ contract TroveManager is PSYBase, CheckContract, Initializable, ITroveManager {
 			 */
 			if (
 				newNICR != _partialRedemptionHintNICR ||
-				_getNetDebt(vars._asset, newDebt) < dfrancParams.MIN_NET_DEBT(vars._asset)
+				_getNetDebt(vars._asset, newDebt) < psyParams.MIN_NET_DEBT(vars._asset)
 			) {
 				singleRedemption.cancelledPartial = true;
 				return singleRedemption;
@@ -1028,7 +1035,7 @@ contract TroveManager is PSYBase, CheckContract, Initializable, ITroveManager {
 			_firstRedemptionHint == address(0) ||
 			!_sortedTroves.contains(_asset, _firstRedemptionHint) ||
 			troveManagerHelpers.getCurrentICR(_asset, _firstRedemptionHint, _price) <
-			dfrancParams.MCR(_asset)
+			psyParams.MCR(_asset)
 		) {
 			return false;
 		}
@@ -1036,7 +1043,7 @@ contract TroveManager is PSYBase, CheckContract, Initializable, ITroveManager {
 		address nextTrove = _sortedTroves.getNext(_asset, _firstRedemptionHint);
 		return
 			nextTrove == address(0) ||
-			troveManagerHelpers.getCurrentICR(_asset, nextTrove, _price) < dfrancParams.MCR(_asset);
+			troveManagerHelpers.getCurrentICR(_asset, nextTrove, _price) < psyParams.MCR(_asset);
 	}
 
 	function setRedemptionWhitelistStatus(bool _status) external onlyOwner {
@@ -1086,11 +1093,11 @@ contract TroveManager is PSYBase, CheckContract, Initializable, ITroveManager {
 			require(redemptionWhitelist[msg.sender], "NW");
 		}
 
-		require(block.timestamp >= dfrancParams.redemptionBlock(_asset), "BR");
+		require(block.timestamp >= psyParams.redemptionBlock(_asset), "BR");
 
 		ContractsCache memory contractsCache = ContractsCache(
-			dfrancParams.activePool(),
-			dfrancParams.defaultPool(),
+			psyParams.activePool(),
+			psyParams.defaultPool(),
 			slsdToken,
 			psyStaking,
 			sortedTroves,
@@ -1100,7 +1107,7 @@ contract TroveManager is PSYBase, CheckContract, Initializable, ITroveManager {
 		RedemptionTotals memory totals;
 
 		troveManagerHelpers._requireValidMaxFeePercentage(_asset, _maxFeePercentage);
-		totals.price = dfrancParams.priceFeed().fetchPrice(_asset);
+		totals.price = psyParams.priceFeed().fetchPrice(_asset);
 		troveManagerHelpers._requireTCRoverMCR(_asset, totals.price);
 		troveManagerHelpers._requireAmountGreaterThanZero(_SLSDamount);
 		troveManagerHelpers._requireSLSDBalanceCoversRedemption(
@@ -1128,7 +1135,7 @@ contract TroveManager is PSYBase, CheckContract, Initializable, ITroveManager {
 			while (
 				currentBorrower != address(0) &&
 				troveManagerHelpers.getCurrentICR(_asset, currentBorrower, totals.price) <
-				dfrancParams.MCR(_asset)
+				psyParams.MCR(_asset)
 			) {
 				currentBorrower = contractsCache.sortedTroves.getPrev(_asset, currentBorrower);
 			}
@@ -1185,14 +1192,16 @@ contract TroveManager is PSYBase, CheckContract, Initializable, ITroveManager {
 
 		_requireUserAcceptsFee(totals.ETHFee, totals.totalAssetDrawn, _maxFeePercentage);
 
-		// Send the ETH fee to the PSY staking contract
-		contractsCache.activePool.sendAsset(
-			_asset,
-			address(contractsCache.psyStaking),
-			totals.ETHFee
-		);
-		contractsCache.psyStaking.increaseF_Asset(_asset, totals.ETHFee);
-
+		if (isPSYReady) {
+			// Send the ETH fee to the PSY staking contract
+			contractsCache.activePool.sendAsset(
+				_asset,
+				address(contractsCache.psyStaking),
+				totals.ETHFee
+			);
+			contractsCache.psyStaking.increaseF_Asset(_asset, totals.ETHFee);
+		}
+		
 		totals.ETHToSendToRedeemer = totals.totalAssetDrawn.sub(totals.ETHFee);
 
 		emit Redemption(
@@ -1208,5 +1217,14 @@ contract TroveManager is PSYBase, CheckContract, Initializable, ITroveManager {
 		// Update Active Pool SLSD, and send ETH to account
 		contractsCache.activePool.decreaseSLSDDebt(_asset, totals.totalSLSDToRedeem);
 		contractsCache.activePool.sendAsset(_asset, msg.sender, totals.ETHToSendToRedeemer);
+	}
+
+	/*
+	 * Add PSY token modules later if it is not added at launch
+	 */
+	function addPSYModules(address _PSYStakingAddress) external onlyOwner {
+		require(!isPSYReady,"PSY modules already registered");
+		psyStaking = IPSYStaking(_PSYStakingAddress);
+		isPSYReady = true;
 	}
 }

@@ -125,14 +125,14 @@ contract TroveManagerHelpers is
 		address _borrowerOperationsAddress,
 		address _slsdTokenAddress,
 		address _sortedTrovesAddress,
-		address _dfrancParamsAddress,
+		address _psyParamsAddress,
 		address _troveManagerAddress
 	) external initializer {
 		require(!isInitialized, "AI");
 		checkContract(_borrowerOperationsAddress);
 		checkContract(_slsdTokenAddress);
 		checkContract(_sortedTrovesAddress);
-		checkContract(_dfrancParamsAddress);
+		checkContract(_psyParamsAddress);
 		checkContract(_troveManagerAddress);
 		isInitialized = true;
 
@@ -141,7 +141,7 @@ contract TroveManagerHelpers is
 		sortedTroves = ISortedTroves(_sortedTrovesAddress);
 		troveManagerAddress = _troveManagerAddress;
 
-		setPSYParameters(_dfrancParamsAddress);
+		setPSYParameters(_psyParamsAddress);
 	}
 
 	// --- Helper functions ---
@@ -199,8 +199,8 @@ contract TroveManagerHelpers is
 		return
 			_applyPendingRewards(
 				_asset,
-				dfrancParams.activePool(),
-				dfrancParams.defaultPool(),
+				psyParams.activePool(),
+				psyParams.defaultPool(),
 				_borrower
 			);
 	}
@@ -514,7 +514,7 @@ contract TroveManagerHelpers is
 		totalStakesSnapshot[_asset] = totalStakes[_asset];
 
 		uint256 activeColl = _activePool.getAssetBalance(_asset);
-		uint256 liquidatedColl = dfrancParams.defaultPool().getAssetBalance(_asset);
+		uint256 liquidatedColl = psyParams.defaultPool().getAssetBalance(_asset);
 		totalCollateralSnapshot[_asset] = activeColl.sub(_collRemainder).add(liquidatedColl);
 
 		emit SystemSnapshotsUpdated(
@@ -589,7 +589,7 @@ contract TroveManagerHelpers is
 	) public view override returns (bool) {
 		uint256 TCR = PSYMath._computeCR(_entireSystemColl, _entireSystemDebt, _price);
 
-		return TCR < dfrancParams.CCR(_asset);
+		return TCR < psyParams.CCR(_asset);
 	}
 
 	function updateBaseRateFromRedemption(
@@ -638,7 +638,7 @@ contract TroveManagerHelpers is
 	{
 		return
 			PSYMath._min(
-				dfrancParams.REDEMPTION_FEE_FLOOR(_asset).add(_baseRate),
+				psyParams.REDEMPTION_FEE_FLOOR(_asset).add(_baseRate),
 				DECIMAL_PRECISION
 			);
 	}
@@ -686,8 +686,8 @@ contract TroveManagerHelpers is
 	{
 		return
 			PSYMath._min(
-				dfrancParams.BORROWING_FEE_FLOOR(_asset).add(_baseRate),
-				dfrancParams.MAX_BORROWING_FEE(_asset)
+				psyParams.BORROWING_FEE_FLOOR(_asset).add(_baseRate),
+				psyParams.MAX_BORROWING_FEE(_asset)
 			);
 	}
 
@@ -771,7 +771,7 @@ contract TroveManagerHelpers is
 	}
 
 	function _requireTCRoverMCR(address _asset, uint256 _price) external view override {
-		require(_getTCR(_asset, _price) >= dfrancParams.MCR(_asset), "CR");
+		require(_getTCR(_asset, _price) >= psyParams.MCR(_asset), "CR");
 	}
 
 	function _requireValidMaxFeePercentage(address _asset, uint256 _maxFeePercentage)
@@ -780,7 +780,7 @@ contract TroveManagerHelpers is
 		override
 	{
 		require(
-			_maxFeePercentage >= dfrancParams.REDEMPTION_FEE_FLOOR(_asset) &&
+			_maxFeePercentage >= psyParams.REDEMPTION_FEE_FLOOR(_asset) &&
 				_maxFeePercentage <= DECIMAL_PRECISION,
 			"MF"
 		);

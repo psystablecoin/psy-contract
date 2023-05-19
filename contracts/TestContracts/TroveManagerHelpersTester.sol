@@ -21,7 +21,7 @@ contract TroveManagerHelpersTester is TroveManagerHelpers {
 	}
 
 	function getSLSDGasCompensation(address _asset) external view returns (uint256) {
-		return dfrancParams.SLSD_GAS_COMPENSATION(_asset);
+		return psyParams.SLSD_GAS_COMPENSATION(_asset);
 	}
 
 	function getCompositeDebt(address _asset, uint256 _debt) external view returns (uint256) {

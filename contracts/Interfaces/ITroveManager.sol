@@ -199,7 +199,7 @@ interface ITroveManager is IPSYBase {
 		address _slsdTokenAddress,
 		address _sortedTrovesAddress,
 		address _psyStakingAddress,
-		address _dfrancParamsAddress,
+		address _psyParamsAddress,
 		address _troveManagerHelpersAddress
 	) external;
 

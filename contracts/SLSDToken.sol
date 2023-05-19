@@ -54,7 +54,7 @@ contract SLSDToken is CheckContract, ISLSDToken, Ownable {
 	event UpdateTroveManagers(address[] troveManagers);
 	event UpdateBorrowerOps(address[] borrowerOps);
 
-	constructor(address _stabilityPoolManagerAddress) ERC20("PSY Stablecoin", "sLSD") {
+	constructor(address _stabilityPoolManagerAddress) ERC20("PSY Stablecoin: sLSD", "sLSD") {
 		checkContract(_stabilityPoolManagerAddress);
 
 		stabilityPoolManager = IStabilityPoolManager(_stabilityPoolManagerAddress);

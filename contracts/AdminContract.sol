@@ -6,7 +6,6 @@ import "@openzeppelin/contracts/proxy/Clones.sol";
 
 import "./Dependencies/CheckContract.sol";
 import "./Dependencies/Initializable.sol";
-import "hardhat/console.sol";
 import "./Interfaces/IStabilityPoolManager.sol";
 import "./Interfaces/IPSYParameters.sol";
 import "./Interfaces/IStabilityPool.sol";
@@ -19,7 +18,7 @@ contract AdminContract is Ownable, Initializable {
 		0xf704b47f65a99b2219b7213612db4be4a436cdf50624f4baca1373ef0de0aac7;
 	bool public isInitialized;
 
-	IPSYParameters private dfrancParameters;
+	IPSYParameters private psyParameters;
 	IStabilityPoolManager private stabilityPoolManager;
 	ICommunityIssuance private communityIssuance;
 
@@ -28,6 +27,8 @@ contract AdminContract is Ownable, Initializable {
 	address troveManagerHelpersAddress;
 	address slsdTokenAddress;
 	address sortedTrovesAddress;
+
+	bool isPSYReady;
 
 	function setAddresses(
 		address _paramaters,
@@ -47,7 +48,6 @@ contract AdminContract is Ownable, Initializable {
 		CheckContract(_troveManagerHelpersAddress);
 		CheckContract(_slsdTokenAddress);
 		CheckContract(_sortedTrovesAddress);
-		CheckContract(_communityIssuanceAddress);
 		isInitialized = true;
 
 		borrowerOperationsAddress = _borrowerOperationsAddress;
@@ -55,9 +55,14 @@ contract AdminContract is Ownable, Initializable {
 		troveManagerHelpersAddress = _troveManagerHelpersAddress;
 		slsdTokenAddress = _slsdTokenAddress;
 		sortedTrovesAddress = _sortedTrovesAddress;
-		communityIssuance = ICommunityIssuance(_communityIssuanceAddress);
 
-		dfrancParameters = IPSYParameters(_paramaters);
+		if(_communityIssuanceAddress != address(0)){
+			CheckContract(_communityIssuanceAddress);
+			communityIssuance = ICommunityIssuance(_communityIssuanceAddress);
+			isPSYReady = true;
+		}
+
+		psyParameters = IPSYParameters(_paramaters);
 		stabilityPoolManager = IStabilityPoolManager(_stabilityPoolManager);
 	}
 
@@ -77,18 +82,31 @@ contract AdminContract is Ownable, Initializable {
 			"This collateral already exists"
 		);
 		
-		dfrancParameters.priceFeed().addOracle(_asset, _chainlinkOracle, _chainlinkIndex);
-		dfrancParameters.setAsDefaultWithRemptionBlock(_asset, redemptionLockInDay);
+		psyParameters.priceFeed().addOracle(_asset, _chainlinkOracle, _chainlinkIndex);
+		psyParameters.setAsDefaultWithRemptionBlock(_asset, redemptionLockInDay);
 		
 		stabilityPoolManager.addStabilityPool(_asset, _stabilityPoolProxyAddress);
-		communityIssuance.addFundToStabilityPoolFrom(
-			_stabilityPoolProxyAddress,
-			assignedToken,
-			msg.sender
-		);
-		communityIssuance.setWeeklyPSYDistribution(
-			_stabilityPoolProxyAddress,
-			_tokenPerWeekDistributed
-		);
+		if(isPSYReady){
+			communityIssuance.addFundToStabilityPoolFrom(
+				_stabilityPoolProxyAddress,
+				assignedToken,
+				msg.sender
+			);
+			communityIssuance.setWeeklyPSYDistribution(
+				_stabilityPoolProxyAddress,
+				_tokenPerWeekDistributed
+			);
+		}
 	}
+
+	/*
+	 * Add PSY token modules later if it is not added at launch
+	 */
+	function addPSYModules(address _communityIssuanceAddress) external onlyOwner {
+		require(!isPSYReady,"PSY modules already registered");
+		CheckContract(_communityIssuanceAddress);
+		communityIssuance = ICommunityIssuance(_communityIssuanceAddress);
+		isPSYReady = true;
+	}
+
 }

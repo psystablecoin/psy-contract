@@ -285,10 +285,10 @@ contract PriceFeed is Ownable, CheckContract, BaseMath, Initializable, IPriceFee
 	{
 		uint256 price;
 		if (_answerDigits >= TARGET_DIGITS) {
-			// Scale the returned price value down to PSY's target precision
+			// Scale the returned price value down to SLSD's target precision
 			price = _price.div(10**(_answerDigits - TARGET_DIGITS));
 		} else if (_answerDigits < TARGET_DIGITS) {
-			// Scale the returned price value up to PSY's target precision
+			// Scale the returned price value up to SLSD's target precision
 			price = _price.mul(10**(TARGET_DIGITS - _answerDigits));
 		}
 		return price;

@@ -6,5 +6,5 @@ import "./IPSYParameters.sol";
 interface IPSYBase {
 	event VaultParametersBaseChanged(address indexed newAddress);
 
-	function dfrancParams() external view returns (IPSYParameters);
+	function psyParams() external view returns (IPSYParameters);
 }

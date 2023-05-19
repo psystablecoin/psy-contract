@@ -68,7 +68,7 @@ contract HintHelpers is PSYBase, CheckContract, Initializable {
 	 *     or zero in case of no partial redemption.
 	 *  - `truncatedSLSDamount` is the maximum amount that can be redeemed out of the the provided `_SLSDamount`. This can be lower than
 	 *    `_SLSDamount` when redeeming the full amount would leave the last Trove of the redemption sequence with less net debt than the
-	 *    minimum allowed value (i.e. dfrancParams.MIN_NET_DEBT()).
+	 *    minimum allowed value (i.e. psyParams.MIN_NET_DEBT()).
 	 *
 	 * The number of Troves to consider for redemption can be capped by passing a non-zero value as `_maxIterations`, while passing zero
 	 * will leave it uncapped.
@@ -103,7 +103,7 @@ contract HintHelpers is PSYBase, CheckContract, Initializable {
 		while (
 			currentTroveuser != address(0) &&
 			troveManagerHelpers.getCurrentICR(vars._asset, currentTroveuser, _price) <
-			dfrancParams.MCR(vars._asset)
+			psyParams.MCR(vars._asset)
 		) {
 			currentTroveuser = sortedTrovesCached.getPrev(vars._asset, currentTroveuser);
 		}
@@ -121,10 +121,10 @@ contract HintHelpers is PSYBase, CheckContract, Initializable {
 			).add(troveManagerHelpers.getPendingSLSDDebtReward(vars._asset, currentTroveuser));
 
 			if (netSLSDDebt > remainingSLSD) {
-				if (netSLSDDebt > dfrancParams.MIN_NET_DEBT(vars._asset)) {
+				if (netSLSDDebt > psyParams.MIN_NET_DEBT(vars._asset)) {
 					uint256 maxRedeemableSLSD = PSYMath._min(
 						remainingSLSD,
-						netSLSDDebt.sub(dfrancParams.MIN_NET_DEBT(vars._asset))
+						netSLSDDebt.sub(psyParams.MIN_NET_DEBT(vars._asset))
 					);
 
 					uint256 ETH = troveManagerHelpers.getTroveColl(vars._asset, currentTroveuser).add(

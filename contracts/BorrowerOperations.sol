@@ -4,6 +4,8 @@ pragma solidity ^0.8.14;
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
+import "hardhat/console.sol";
+
 import "./Interfaces/IBorrowerOperations.sol";
 import "./Interfaces/ITroveManager.sol";
 import "./Interfaces/ITroveManagerHelpers.sol";
@@ -38,6 +40,7 @@ contract BorrowerOperations is PSYBase, CheckContract, IBorrowerOperations, Init
 
 	IPSYStaking public PSYStaking;
 	address public PSYStakingAddress;
+	bool isPSYReady;
 
 	ISLSDToken public SLSDToken;
 
@@ -113,7 +116,7 @@ contract BorrowerOperations is PSYBase, CheckContract, IBorrowerOperations, Init
 		address _sortedTrovesAddress,
 		address _slsdTokenAddress,
 		address _PSYStakingAddress,
-		address _dfrancParamsAddress
+		address _psyParamsAddress
 	) external override initializer onlyOwner {
 		require(!isInitialized, "Already initialized");
 		checkContract(_troveManagerAddress);
@@ -123,8 +126,7 @@ contract BorrowerOperations is PSYBase, CheckContract, IBorrowerOperations, Init
 		checkContract(_collSurplusPoolAddress);
 		checkContract(_sortedTrovesAddress);
 		checkContract(_slsdTokenAddress);
-		checkContract(_PSYStakingAddress);
-		checkContract(_dfrancParamsAddress);
+		checkContract(_psyParamsAddress);
 		isInitialized = true;
 
 		troveManager = ITroveManager(_troveManagerAddress);
@@ -134,10 +136,15 @@ contract BorrowerOperations is PSYBase, CheckContract, IBorrowerOperations, Init
 		collSurplusPool = ICollSurplusPool(_collSurplusPoolAddress);
 		sortedTroves = ISortedTroves(_sortedTrovesAddress);
 		SLSDToken = ISLSDToken(_slsdTokenAddress);
-		PSYStakingAddress = _PSYStakingAddress;
-		PSYStaking = IPSYStaking(_PSYStakingAddress);
 
-		setPSYParameters(_dfrancParamsAddress);
+		if (_PSYStakingAddress != address(0)) {
+			checkContract(_PSYStakingAddress);
+			PSYStakingAddress = _PSYStakingAddress;
+			PSYStaking = IPSYStaking(_PSYStakingAddress);
+			isPSYReady = true;
+		}
+		
+		setPSYParameters(_psyParamsAddress);
 
 		emit TroveManagerAddressChanged(_troveManagerAddress);
 		emit StabilityPoolAddressChanged(_stabilityPoolManagerAddress);
@@ -164,19 +171,19 @@ contract BorrowerOperations is PSYBase, CheckContract, IBorrowerOperations, Init
 		address _upperHint,
 		address _lowerHint
 	) external payable override {
-		dfrancParams.sanitizeParameters(_asset);
-
+		psyParams.sanitizeParameters(_asset);
+		console.log("a",_SLSDamount);
 		ContractsCache memory contractsCache = ContractsCache(
 			troveManager,
 			troveManagerHelpers,
-			dfrancParams.activePool(),
+			psyParams.activePool(),
 			SLSDToken
 		);
 		LocalVariables_openTrove memory vars;
 		vars.asset = _asset;
 
 		_tokenAmount = getMethodValue(vars.asset, _tokenAmount, false);
-		vars.price = dfrancParams.priceFeed().fetchPrice(vars.asset);
+		vars.price = psyParams.priceFeed().fetchPrice(vars.asset);
 
 		bool isRecoveryMode = _checkRecoveryMode(vars.asset, vars.price);
 
@@ -190,7 +197,7 @@ contract BorrowerOperations is PSYBase, CheckContract, IBorrowerOperations, Init
 
 		vars.netDebt = _SLSDamount;
 
-		if (!isRecoveryMode) {
+		if (!isRecoveryMode && isPSYReady) {
 			vars.SLSDFee = _triggerBorrowingFee(
 				vars.asset,
 				contractsCache.troveManager,
@@ -263,8 +270,8 @@ contract BorrowerOperations is PSYBase, CheckContract, IBorrowerOperations, Init
 			contractsCache.activePool,
 			contractsCache.SLSDToken,
 			gasPoolAddress,
-			dfrancParams.SLSD_GAS_COMPENSATION(vars.asset),
-			dfrancParams.SLSD_GAS_COMPENSATION(vars.asset)
+			psyParams.SLSD_GAS_COMPENSATION(vars.asset),
+			psyParams.SLSD_GAS_COMPENSATION(vars.asset)
 		);
 
 		emit TroveUpdated(
@@ -405,7 +412,7 @@ contract BorrowerOperations is PSYBase, CheckContract, IBorrowerOperations, Init
 		ContractsCache memory contractsCache = ContractsCache(
 			troveManager,
 			troveManagerHelpers,
-			dfrancParams.activePool(),
+			psyParams.activePool(),
 			SLSDToken
 		);
 		LocalVariables_adjustTrove memory vars;
@@ -416,7 +423,7 @@ contract BorrowerOperations is PSYBase, CheckContract, IBorrowerOperations, Init
 			"BorrowerOp: _AssetSent and Msg.value aren't the same!"
 		);
 
-		vars.price = dfrancParams.priceFeed().fetchPrice(vars.asset);
+		vars.price = psyParams.priceFeed().fetchPrice(vars.asset);
 		bool isRecoveryMode = _checkRecoveryMode(vars.asset, vars.price);
 
 		if (_isDebtIncrease) {
@@ -443,7 +450,7 @@ contract BorrowerOperations is PSYBase, CheckContract, IBorrowerOperations, Init
 		vars.netDebtChange = _SLSDChange;
 
 		// If the adjustment incorporates a debt increase and system is in Normal Mode, then trigger a borrowing fee
-		if (_isDebtIncrease && !isRecoveryMode) {
+		if (_isDebtIncrease && !isRecoveryMode && isPSYReady) {
 			vars.SLSDFee = _triggerBorrowingFee(
 				vars.asset,
 				contractsCache.troveManager,
@@ -545,11 +552,11 @@ contract BorrowerOperations is PSYBase, CheckContract, IBorrowerOperations, Init
 
 	function closeTrove(address _asset) external override {
 		ITroveManagerHelpers troveManagerHelpersCached = troveManagerHelpers;
-		IActivePool activePoolCached = dfrancParams.activePool();
+		IActivePool activePoolCached = psyParams.activePool();
 		ISLSDToken SLSDTokenCached = SLSDToken;
 
 		_requireTroveisActive(_asset, troveManagerHelpersCached, msg.sender);
-		uint256 price = dfrancParams.priceFeed().fetchPrice(_asset);
+		uint256 price = psyParams.priceFeed().fetchPrice(_asset);
 		_requireNotInRecoveryMode(_asset, price);
 
 		troveManagerHelpersCached.applyPendingRewards(_asset, msg.sender);
@@ -560,7 +567,7 @@ contract BorrowerOperations is PSYBase, CheckContract, IBorrowerOperations, Init
 		_requireSufficientSLSDBalance(
 			SLSDTokenCached,
 			msg.sender,
-			debt.sub(dfrancParams.SLSD_GAS_COMPENSATION(_asset))
+			debt.sub(psyParams.SLSD_GAS_COMPENSATION(_asset))
 		);
 
 		uint256 newTCR = _getNewTCRFromTroveChange(_asset, coll, false, debt, false, price);
@@ -577,7 +584,7 @@ contract BorrowerOperations is PSYBase, CheckContract, IBorrowerOperations, Init
 			activePoolCached,
 			SLSDTokenCached,
 			msg.sender,
-			debt.sub(dfrancParams.SLSD_GAS_COMPENSATION(_asset))
+			debt.sub(psyParams.SLSD_GAS_COMPENSATION(_asset))
 		);
 
 		_repaySLSD(
@@ -585,7 +592,7 @@ contract BorrowerOperations is PSYBase, CheckContract, IBorrowerOperations, Init
 			activePoolCached,
 			SLSDTokenCached,
 			gasPoolAddress,
-			dfrancParams.SLSD_GAS_COMPENSATION(_asset)
+			psyParams.SLSD_GAS_COMPENSATION(_asset)
 		);
 
 		// Send the collateral back to the user
@@ -598,6 +605,16 @@ contract BorrowerOperations is PSYBase, CheckContract, IBorrowerOperations, Init
 	function claimCollateral(address _asset) external override {
 		// send ETH from CollSurplus Pool to owner
 		collSurplusPool.claimColl(_asset, msg.sender);
+	}
+
+	/*
+	 * Add PSY token modules later if it is not added at launch
+	 */
+	function addPSYModules(address _PSYStakingAddress) external onlyOwner {
+		require(!isPSYReady,"PSY modules already registered");
+		PSYStakingAddress = _PSYStakingAddress;
+		PSYStaking = IPSYStaking(_PSYStakingAddress);
+		isPSYReady = true;
 	}
 
 	// --- Helper functions ---
@@ -828,14 +845,14 @@ contract BorrowerOperations is PSYBase, CheckContract, IBorrowerOperations, Init
 
 	function _requireICRisAboveMCR(address _asset, uint256 _newICR) internal view {
 		require(
-			_newICR >= dfrancParams.MCR(_asset),
+			_newICR >= psyParams.MCR(_asset),
 			"BorrowerOps: An operation that would result in ICR < MCR is not permitted"
 		);
 	}
 
 	function _requireICRisAboveCCR(address _asset, uint256 _newICR) internal view {
 		require(
-			_newICR >= dfrancParams.CCR(_asset),
+			_newICR >= psyParams.CCR(_asset),
 			"BorrowerOps: Operation must leave trove with ICR >= CCR"
 		);
 	}
@@ -849,14 +866,15 @@ contract BorrowerOperations is PSYBase, CheckContract, IBorrowerOperations, Init
 
 	function _requireNewTCRisAboveCCR(address _asset, uint256 _newTCR) internal view {
 		require(
-			_newTCR >= dfrancParams.CCR(_asset),
+			_newTCR >= psyParams.CCR(_asset),
 			"BorrowerOps: An operation that would result in TCR < CCR is not permitted"
 		);
 	}
 
 	function _requireAtLeastMinNetDebt(address _asset, uint256 _netDebt) internal view {
+		console.log("B",_netDebt, psyParams.MIN_NET_DEBT(_asset));
 		require(
-			_netDebt >= dfrancParams.MIN_NET_DEBT(_asset),
+			_netDebt >= psyParams.MIN_NET_DEBT(_asset),
 			"BorrowerOps: Trove's net debt must be greater than minimum"
 		);
 	}
@@ -867,7 +885,7 @@ contract BorrowerOperations is PSYBase, CheckContract, IBorrowerOperations, Init
 		uint256 _debtRepayment
 	) internal view {
 		require(
-			_debtRepayment <= _currentDebt.sub(dfrancParams.SLSD_GAS_COMPENSATION(_asset)),
+			_debtRepayment <= _currentDebt.sub(psyParams.SLSD_GAS_COMPENSATION(_asset)),
 			"BorrowerOps: Amount repaid must not be larger than the Trove's debt"
 		);
 	}
@@ -897,13 +915,13 @@ contract BorrowerOperations is PSYBase, CheckContract, IBorrowerOperations, Init
 	) internal view {
 		if (_isRecoveryMode) {
 			require(
-				_maxFeePercentage <= dfrancParams.DECIMAL_PRECISION(),
+				_maxFeePercentage <= psyParams.DECIMAL_PRECISION(),
 				"Max fee percentage must less than or equal to 100%"
 			);
 		} else {
 			require(
-				_maxFeePercentage >= dfrancParams.BORROWING_FEE_FLOOR(_asset) &&
-					_maxFeePercentage <= dfrancParams.DECIMAL_PRECISION(),
+				_maxFeePercentage >= psyParams.BORROWING_FEE_FLOOR(_asset) &&
+					_maxFeePercentage <= psyParams.DECIMAL_PRECISION(),
 				"Max fee percentage must be between 0.5% and 100%"
 			);
 		}

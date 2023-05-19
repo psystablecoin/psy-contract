@@ -40,12 +40,12 @@ contract LockedPSY is Ownable, ReentrancyGuard, CheckContract {
 		_;
 	}
 
-	function setAddresses(address _monAddress) external onlyOwner {
+	function setAddresses(address _psyAddress) external onlyOwner {
 		require(!isInitialized, "Already Initialized");
-		checkContract(_monAddress);
+		checkContract(_psyAddress);
 		isInitialized = true;
 
-		psyToken = IERC20(_monAddress);
+		psyToken = IERC20(_psyAddress);
 	}
 
 	function addEntityVestingBatch(address[] memory _entities, uint256[] memory _totalSupplies)

@@ -33,7 +33,7 @@ contract CommunityIssuance is
 	mapping(address => uint256) public totalPSYIssued;
 	mapping(address => uint256) public lastUpdateTime; // lastUpdateTime is in minutes
 	mapping(address => uint256) public PSYSupplyCaps;
-	mapping(address => uint256) public monDistributionsByPool; // monDistributionsByPool is in minutes
+	mapping(address => uint256) public psyDistributionsByPool; // psyDistributionsByPool is in minutes
 
 	address public adminContract;
 
@@ -210,7 +210,7 @@ contract CommunityIssuance is
 		uint256 timePassed = block.timestamp.div(SECONDS_IN_ONE_MINUTE).sub(
 			lastUpdateTime[stabilityPool]
 		);
-		uint256 totalDistributedSinceBeginning = monDistributionsByPool[stabilityPool].mul(
+		uint256 totalDistributedSinceBeginning = psyDistributionsByPool[stabilityPool].mul(
 			timePassed
 		);
 
@@ -233,6 +233,6 @@ contract CommunityIssuance is
 		isController
 		isStabilityPool(_stabilityPool)
 	{
-		monDistributionsByPool[_stabilityPool] = _weeklyReward.div(DISTRIBUTION_DURATION);
+		psyDistributionsByPool[_stabilityPool] = _weeklyReward.div(DISTRIBUTION_DURATION);
 	}
 }
