@@ -39,6 +39,7 @@ const waitFunction = async () => {
 
 const GAS_PRICE = 25000000000
 const TX_CONFIRMATIONS = 1
+const treasuryAddress = "0x9a8C847ed0ABb000501fB6b8d8E0fF9bcDd24dCb"
 
 const ETHERSCAN_BASE_URL = 'https://sepolia.etherscan.io/address'
 
@@ -51,6 +52,7 @@ module.exports = {
   GAS_PRICE,
   TX_CONFIRMATIONS,
   ETHERSCAN_BASE_URL,
+  treasuryAddress,
   IsMainnet,
   REDEMPTION_SAFETY,
   DEPLOYMENT_PHASE

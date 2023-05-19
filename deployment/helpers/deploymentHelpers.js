@@ -298,6 +298,7 @@ class DeploymentHelper {
   async connectCoreContractsMainnet(contracts, PSYContracts) {
 
     const gasPrice = this.configParams.GAS_PRICE
+    const treasuryAddress = this.configParams.treasuryAddress
 
     await this.isOwnershipRenounced(contracts.priceFeed) ||
       await this.sendAndWaitForTransaction(contracts.priceFeed.setAddresses(
@@ -353,8 +354,8 @@ class DeploymentHelper {
         contracts.collSurplusPool.address,
         contracts.sortedTroves.address,
         contracts.slsdToken.address,
-        treasuryAddress,
         PSYContracts.PSYStaking.address,
+        treasuryAddress,
         contracts.psyParameters.address,
         { gasPrice }
       ))
@@ -442,7 +443,7 @@ class DeploymentHelper {
 
   // --- Verify on Ethrescan ---
   async verifyContract(name, deploymentState, constructorArguments = [], proxy = false) {
-    console.log("aa")
+    
     if (!deploymentState[name] || !deploymentState[name].address) {
       console.error(`  --> No deployment state for contract ${name}!!`)
       return
@@ -453,7 +454,6 @@ class DeploymentHelper {
     }
 
     if (!deploymentState[name].verification) {
-      console.log("bb")
       try {
         await this.hre.run("verify:verify", {
           address: deploymentState[name].address,

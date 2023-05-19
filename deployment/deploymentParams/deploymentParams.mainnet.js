@@ -19,7 +19,7 @@ const psyAddresses = {
 }
 
 // 1 month funding
-const monetaCommunityIssuanceParams = {
+const psyCommunityIssuanceParams = {
   ETH_STABILITY_POOL_FUNDING: 0,
   BTC_STABILITY_POOL_FUNDING: 0,
   ETH_STABILITY_POOL_WEEKLY_DISTRIBUTION: 0,
@@ -46,7 +46,7 @@ const ETHERSCAN_BASE_URL = 'https://etherscan.io/address'
 module.exports = {
   externalAddrs,
   psyAddresses,
-  monetaCommunityIssuanceParams,
+  psyCommunityIssuanceParams,
   OUTPUT_FILE,
   waitFunction,
   GAS_PRICE,

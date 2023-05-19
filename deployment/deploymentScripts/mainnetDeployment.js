@@ -54,7 +54,7 @@ async function mainnetDeploy(configParams) {
   if (config.DEPLOYMENT_PHASE == 2) {
    
     // Deploy core logic contracts
-    psyCore = await mdh.deployDchfCoreMainnet(deploymentState, ADMIN_WALLET)
+    psyCore = await mdh.deployslsdCoreMainnet(deploymentState, ADMIN_WALLET)
     
     await mdh.logContractObjects(psyCore)
 
@@ -118,7 +118,6 @@ async function addETHCollaterals() {
     await stabilityPoolETH.deployed();
 
     console.log("Initializing ETH Stability Pool with Parameters");
-    await stabilityPoolETH.deployed();
 
     const initializeSBETH = await mdh
       .sendAndWaitForTransaction(
@@ -141,12 +140,12 @@ async function addETHCollaterals() {
         psyCore.adminContract.addNewCollateral(
           stabilityPoolETH.address,
           config.externalAddrs.CHAINLINK_ETHUSD_PROXY,
-          config.externalAddrs.CHAINLINK_USSLSD_PROXY,
-          dec(config.monetaCommunityIssuanceParams.ETH_STABILITY_POOL_FUNDING, 18),
-          dec(config.monetaCommunityIssuanceParams.ETH_STABILITY_POOL_WEEKLY_DISTRIBUTION, 18),
-          config.REDEMPTION_SAFETY), {
-        gasPrice,
-      })
+          dec(config.psyCommunityIssuanceParams.ETH_STABILITY_POOL_FUNDING, 18),
+          dec(config.psyCommunityIssuanceParams.ETH_STABILITY_POOL_WEEKLY_DISTRIBUTION, 18),
+          config.REDEMPTION_SAFETY
+        ),
+        {gasPrice,}
+      )
 
     console.log("Transferring Ownership to Multisig of Stability Pool ETH");
 
@@ -188,7 +187,6 @@ async function addBTCCollaterals() {
     await stabilityPoolBTC.deployed();
 
     console.log("Initializing wBTC Stability Pool with Parameters");
-    await stabilityPoolBTC.deployed();
 
     const initializeSBBTC = await mdh
       .sendAndWaitForTransaction(
@@ -211,9 +209,8 @@ async function addBTCCollaterals() {
         psyCore.adminContract.addNewCollateral(
           stabilityPoolBTC.address,
           config.externalAddrs.CHAINLINK_BTCUSD_PROXY,
-          config.externalAddrs.CHAINLINK_USSLSD_PROXY,
-          dec(config.monetaCommunityIssuanceParams.BTC_STABILITY_POOL_FUNDING, 18),
-          dec(config.monetaCommunityIssuanceParams.BTC_STABILITY_POOL_WEEKLY_DISTRIBUTION, 18),
+          dec(config.psyCommunityIssuanceParams.BTC_STABILITY_POOL_FUNDING, 18),
+          dec(config.psyCommunityIssuanceParams.BTC_STABILITY_POOL_WEEKLY_DISTRIBUTION, 18),
           config.REDEMPTION_SAFETY), {
         gasPrice,
       })
