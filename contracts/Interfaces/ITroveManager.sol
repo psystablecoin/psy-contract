@@ -152,6 +152,7 @@ interface ITroveManager is IPSYBase {
 		uint256 _coll,
 		uint8 operation
 	);
+	event TreasuryAddressChanged(address _treausury);
 	event BaseRateUpdated(address indexed _asset, uint256 _baseRate);
 	event LastFeeOpTimeUpdated(address indexed _asset, uint256 _lastFeeOpTime);
 	event TotalStakesUpdated(address indexed _asset, uint256 _newTotalStakes);

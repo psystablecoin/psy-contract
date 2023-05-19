@@ -1245,5 +1245,6 @@ contract TroveManager is PSYBase, CheckContract, Initializable, ITroveManager {
 	function changeTreasuryAddress(address _treasury) public onlyOwner {
 		require(_treasury != address(0), "Treasury address is zero");
 		treasury = _treasury;
+		emit TreasuryAddressChanged(_treasury);
 	}
 }

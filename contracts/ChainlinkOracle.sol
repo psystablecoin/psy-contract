@@ -37,7 +37,7 @@ contract ChainlinkOracle is Ownable, CheckContract, BaseMath, Initializable, IOr
 	event RegisteredNewOracle(address chainLinkAggregator);
 
 
-	string public constant NAME = "PriceFeed";
+	string public constant NAME = "ChainlinkOracle";
 
 	address public asset;
 

@@ -6,6 +6,7 @@ pragma solidity ^0.8.14;
 interface IBorrowerOperations {
 	// --- Events ---
 
+	event TreasuryAddressChanged(address _treausury);
 	event TroveManagerAddressChanged(address _newTroveManagerAddress);
 	event StabilityPoolAddressChanged(address _stabilityPoolAddress);
 	event GasPoolAddressChanged(address _gasPoolAddress);

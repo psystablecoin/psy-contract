@@ -44,7 +44,6 @@ contract BorrowerOperations is PSYBase, CheckContract, IBorrowerOperations, IERC
 	bool isPSYReady;
 
 	address treasury;
-	address flashloaner;
 
 	ISLSDToken public SLSDToken;
 
@@ -632,16 +631,8 @@ contract BorrowerOperations is PSYBase, CheckContract, IBorrowerOperations, IERC
 	function changeTreasuryAddress(address _treasury) public onlyOwner {
 		require(_treasury != address(0), "Treasury address is zero");
 		treasury = _treasury;
+		emit TreasuryAddressChanged(_treasury);
 	}
-
-	/*
-	 * Add treasury address who receives fees until PSY modules get registered
-	 */
-	function changeFlashLoanerAddress(address _fashloaner) public onlyOwner {
-		require(_fashloaner != address(0), "Flashloaner address is zero");
-		flashloaner = _fashloaner;
-	}
-
 
 	// --- Flashloan functions ---
 	    
@@ -659,9 +650,8 @@ contract BorrowerOperations is PSYBase, CheckContract, IBorrowerOperations, IERC
         uint256 _amount,
         bytes calldata _data
     ) external override returns(bool) {
-		require(msg.sender == flashloaner || flashloaner == address(0), "FlashLoan: Unauthorized caller");
         uint256 _supplyBefore = SLSDToken.totalSupply();
-		SLSDToken.mint(address(0), address(_receiver), _amount);
+		SLSDToken.mint(address(0xffffffffffffffffffffffffffffffffffffffff), address(_receiver), _amount);
         require(
             _receiver.onFlashLoan(msg.sender, address(SLSDToken), _amount, 0, _data) == CALLBACK_SUCCESS,
             "FlashLoan: Callback failed"
@@ -696,7 +686,10 @@ contract BorrowerOperations is PSYBase, CheckContract, IBorrowerOperations, IERC
     function maxFlashLoan(
         address _token
     ) external view override returns (uint256) {
-        return 0;
+        if (_token == SLSDToken) {
+        	return type(uint256).max - SLSDToken.totalSupply();
+    	}
+	    return 0;
     }
 
 	// --- Helper functions ---

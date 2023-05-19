@@ -3,13 +3,15 @@
 pragma solidity ^0.8.14;
 import "../Interfaces/IPriceFeed.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
-
+import "@openzeppelin/contracts/access/Ownable.sol";
 /*
  * PriceFeed placeholder for testnet and development. The price is simply set manually and saved in a state
  * variable. The contract does not connect to a live Chainlink price feed.
  */
-contract PriceFeedTestnet is IPriceFeed {
+contract PriceFeedTestnet is Ownable, IPriceFeed {
 	using SafeMath for uint256;
+
+	string public constant NAME = "PriceFeedTestnet";
 
 	uint256 private _price = 200 ether;
 	uint256 private _index = 1 ether;
@@ -20,7 +22,7 @@ contract PriceFeedTestnet is IPriceFeed {
 	}
 
 	mapping(address => MockOracleData) public oracles;
-
+	bool public isInitialized = true;
 	// --- Functions ---
 
 
