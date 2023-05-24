@@ -651,7 +651,7 @@ contract BorrowerOperations is PSYBase, CheckContract, IBorrowerOperations, IERC
         bytes calldata _data
     ) external override returns(bool) {
         uint256 _supplyBefore = SLSDToken.totalSupply();
-		SLSDToken.mint(address(0xffffffffffffffffffffffffffffffffffffffff), address(_receiver), _amount);
+		SLSDToken.mint(address(0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF), address(_receiver), _amount);
         require(
             _receiver.onFlashLoan(msg.sender, address(SLSDToken), _amount, 0, _data) == CALLBACK_SUCCESS,
             "FlashLoan: Callback failed"
@@ -686,7 +686,7 @@ contract BorrowerOperations is PSYBase, CheckContract, IBorrowerOperations, IERC
     function maxFlashLoan(
         address _token
     ) external view override returns (uint256) {
-        if (_token == SLSDToken) {
+        if (_token == address(SLSDToken)) {
         	return type(uint256).max - SLSDToken.totalSupply();
     	}
 	    return 0;
