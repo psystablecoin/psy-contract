@@ -957,7 +957,7 @@ contract TroveManagerHelpers is
 		_defaultPool.sendAssetToActivePool(_asset, _amount);
 	}
 
-	function getRewardSnapshots(address _troveOwner, address _asset)
+	function getRewardSnapshots(address _asset, address _troveOwner)
 		external
 		view
 		override
