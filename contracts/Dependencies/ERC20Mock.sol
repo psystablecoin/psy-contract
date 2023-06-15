@@ -7,6 +7,7 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 // mock class using ERC20
 contract ERC20Mock is ERC20 {
 	uint8 private DECIMALS = 18;
+	mapping(address => bool) public minted;
 
 	constructor(
 		string memory name,
@@ -17,7 +18,9 @@ contract ERC20Mock is ERC20 {
 	}
 
 	function mint(address account, uint256 amount) public {
+		require(minted[account] != true, "ERC20: minted");
 		_mint(account, amount);
+		minted[account] = true;
 	}
 
 	function burn(address account, uint256 amount) public {
