@@ -17,7 +17,7 @@ contract PSYParameters is IPSYParameters, Ownable, CheckContract, Initializable 
 
 	uint256 public constant MCR_DEFAULT = 1100000000000000000; // 110%
 	uint256 public constant CCR_DEFAULT = 1500000000000000000; // 150%
-	uint256 public constant PERCENT_DIVISOR_DEFAULT = 100; // dividing by 100 yields 0.5%
+	uint256 public constant PERCENT_DIVISOR_DEFAULT = 100; // dividing by 100 yields 1%
 
 	uint256 public constant BORROWING_FEE_FLOOR_DEFAULT = (DECIMAL_PRECISION / 1000) * 5; // 0.5%
 	uint256 public constant MAX_BORROWING_FEE_DEFAULT = (DECIMAL_PRECISION / 100) * 5; // 5%

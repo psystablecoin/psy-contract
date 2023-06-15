@@ -65,7 +65,7 @@ contract CommunityIssuance is
 		_;
 	}
 
-	// --- Functions ---
+	// --- Admin Functions ---
 	function setAddresses(
 		address _psyTokenAddress,
 		address _stabilityPoolManagerAddress,
@@ -176,6 +176,8 @@ contract CommunityIssuance is
 		PSYSupplyCaps[_pool] = 0;
 		totalPSYIssued[_pool] = 0;
 	}
+	
+	// --- Distribution module ---
 
 	function issuePSY() external override onlyStabilityPool returns (uint256) {
 		return _issuePSY(msg.sender);
