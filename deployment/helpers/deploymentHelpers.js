@@ -424,6 +424,130 @@ class DeploymentHelper {
       ))
   }
 
+    // Connect contracts to their dependencies
+  async connectCoreContractsMainnetNoToken(contracts) {
+
+      const gasPrice = this.configParams.GAS_PRICE
+      const treasuryAddress = this.configParams.treasuryAddress
+  
+      await this.isOwnershipRenounced(contracts.priceFeed) ||
+        await this.sendAndWaitForTransaction(contracts.priceFeed.setAddresses(
+          contracts.adminContract.address,
+          { gasPrice }))
+  
+      await this.isOwnershipRenounced(contracts.sortedTroves) ||
+        await this.sendAndWaitForTransaction(contracts.sortedTroves.setParams(
+          contracts.troveManager.address,
+          contracts.troveManagerHelpers.address,
+          contracts.borrowerOperations.address,
+          { gasPrice }
+        ))
+      await this.isOwnershipRenounced(contracts.psyParameters) ||
+        await this.sendAndWaitForTransaction(contracts.psyParameters.setAddresses(
+          contracts.activePool.address,
+          contracts.defaultPool.address,
+          contracts.priceFeed.address,
+          contracts.adminContract.address,
+          { gasPrice }
+        ))
+  
+      await this.isOwnershipRenounced(contracts.troveManager) ||
+        await this.sendAndWaitForTransaction(contracts.troveManager.setAddresses(
+          contracts.stabilityPoolManager.address,
+          contracts.gasPool.address,
+          contracts.collSurplusPool.address,
+          contracts.slsdToken.address,
+          contracts.sortedTroves.address,
+          ZERO_ADDRESS,
+          treasuryAddress,
+          contracts.psyParameters.address,
+          contracts.troveManagerHelpers.address,
+          { gasPrice }
+        ))
+  
+      await this.isOwnershipRenounced(contracts.troveManagerHelpers) ||
+        await this.sendAndWaitForTransaction(contracts.troveManagerHelpers.setAddresses(
+          contracts.borrowerOperations.address,
+          contracts.slsdToken.address,
+          contracts.sortedTroves.address,
+          contracts.psyParameters.address,
+          contracts.troveManager.address,
+          { gasPrice }
+        ))
+  
+      await this.isOwnershipRenounced(contracts.borrowerOperations) ||
+        await this.sendAndWaitForTransaction(contracts.borrowerOperations.setAddresses(
+          contracts.troveManager.address,
+          contracts.troveManagerHelpers.address,
+          contracts.stabilityPoolManager.address,
+          contracts.gasPool.address,
+          contracts.collSurplusPool.address,
+          contracts.sortedTroves.address,
+          contracts.slsdToken.address,
+          ZERO_ADDRESS,
+          treasuryAddress,
+          contracts.psyParameters.address,
+          { gasPrice }
+        ))
+  
+      await this.isOwnershipRenounced(contracts.stabilityPoolManager) ||
+        await this.sendAndWaitForTransaction(contracts.stabilityPoolManager.setAddresses(
+          contracts.adminContract.address,
+          { gasPrice }
+        ))
+  
+      await this.isOwnershipRenounced(contracts.activePool) ||
+        await this.sendAndWaitForTransaction(contracts.activePool.setAddresses(
+          contracts.borrowerOperations.address,
+          contracts.troveManager.address,
+          contracts.troveManagerHelpers.address,
+          contracts.stabilityPoolManager.address,
+          contracts.defaultPool.address,
+          contracts.collSurplusPool.address,
+          { gasPrice }
+        ))
+  
+      await this.isOwnershipRenounced(contracts.defaultPool) ||
+        await this.sendAndWaitForTransaction(contracts.defaultPool.setAddresses(
+          contracts.troveManager.address,
+          contracts.troveManagerHelpers.address,
+          contracts.activePool.address,
+          { gasPrice }
+        ))
+  
+      await this.isOwnershipRenounced(contracts.collSurplusPool) ||
+        await this.sendAndWaitForTransaction(contracts.collSurplusPool.setAddresses(
+          contracts.borrowerOperations.address,
+          contracts.troveManager.address,
+          contracts.troveManagerHelpers.address,
+          contracts.activePool.address,
+          { gasPrice }
+        ))
+  
+      await this.isOwnershipRenounced(contracts.adminContract) ||
+        await this.sendAndWaitForTransaction(contracts.adminContract.setAddresses(
+          contracts.psyParameters.address,
+          contracts.stabilityPoolManager.address,
+          contracts.borrowerOperations.address,
+          contracts.troveManager.address,
+          contracts.troveManagerHelpers.address,
+          contracts.slsdToken.address,
+          contracts.sortedTroves.address,
+          ZERO_ADDRESS,
+          { gasPrice }
+        ))
+  
+      // set contracts in HintHelpers
+      await this.isOwnershipRenounced(contracts.hintHelpers) ||
+        await this.sendAndWaitForTransaction(contracts.hintHelpers.setAddresses(
+          contracts.sortedTroves.address,
+          contracts.troveManager.address,
+          contracts.troveManagerHelpers.address,
+          contracts.psyParameters.address,
+          { gasPrice }
+        ))
+    }
+  
   async connectPSYContractsToCoreMainnet(PSYContracts, coreContracts, treasuryAddress) {
     const gasPrice = this.configParams.GAS_PRICE
     await this.isOwnershipRenounced(PSYContracts.PSYStaking) ||
