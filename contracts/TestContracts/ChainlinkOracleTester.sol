@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.14;
 
-import "../ChainlinkOracle.sol";
+import "../Oracles/ChainlinkOracle.sol";
 
 contract ChainlinkOracleTester is ChainlinkOracle {
 	function setLastGoodPrice(uint256 _lastGoodPrice) external {

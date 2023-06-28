@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.14;
-import "./Interfaces/IOracle.sol";
+import "../Interfaces/IOracle.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
-import "./Dependencies/CheckContract.sol";
-import "./Dependencies/BaseMath.sol";
-import "./Dependencies/PSYMath.sol";
-import "./Dependencies/Initializable.sol";
+import "../Dependencies/CheckContract.sol";
+import "../Dependencies/BaseMath.sol";
+import "../Dependencies/PSYMath.sol";
+import "../Dependencies/Initializable.sol";
 
 contract ChainlinkOracle is Ownable, CheckContract, BaseMath, Initializable, IOracle {
 	using SafeMath for uint256;

@@ -85,6 +85,7 @@ contract AdminContract is Ownable, Initializable {
 		psyParameters.setAsDefaultWithRemptionBlock(_asset, redemptionLockInDay);
 		
 		stabilityPoolManager.addStabilityPool(_asset, _stabilityPoolProxyAddress);
+		
 		if(isPSYReady){
 			communityIssuance.addFundToStabilityPoolFrom(
 				_stabilityPoolProxyAddress,
@@ -96,16 +97,19 @@ contract AdminContract is Ownable, Initializable {
 				_tokenPerWeekDistributed
 			);
 		}
+		
 	}
 
 	/*
 	 * Add PSY token modules later if it is not added at launch
 	 */
+	/*
 	function addPSYModules(address _communityIssuanceAddress) external onlyOwner {
 		require(!isPSYReady,"PSY modules already registered");
 		CheckContract(_communityIssuanceAddress);
 		communityIssuance = ICommunityIssuance(_communityIssuanceAddress);
 		isPSYReady = true;
 	}
+	*/
 
 }
