@@ -80,11 +80,11 @@ contract sfrxETHOracle is IOracle, Ownable, ConcentratedLiquidityBasePriceOracle
 			uint256 _WETHUSDPrice = _priceUniV3(usdc, IUniswapV3Pool(WETHUSDC));
 			uint256 _frxETHPrice = _priceRamses(weth, IRamsesPair(frxETHETH));
 			
-			if( _WETHUSDPrice - _lastWETHUSDPrice >= maxVolatilityAllowance){
+			if( _WETHUSDPrice - _lastWETHUSDPrice >= _lastWETHUSDPrice * maxVolatilityAllowance / TARGET_DECIMAL_1E18){
 				_WETHUSDPrice = _lastWETHUSDPrice;
 			}
 
-			if( _frxETHPrice - _lastFrxETHPrice >= maxVolatilityAllowance){
+			if( _frxETHPrice - _lastFrxETHPrice >= _lastFrxETHPrice * maxVolatilityAllowance / TARGET_DECIMAL_1E18){
 				_frxETHPrice = _lastFrxETHPrice;
 			}
 
@@ -115,11 +115,11 @@ contract sfrxETHOracle is IOracle, Ownable, ConcentratedLiquidityBasePriceOracle
 			uint256 _WETHUSDPrice = _priceUniV3(usdc, IUniswapV3Pool(WETHUSDC));
 			uint256 _frxETHPrice = _priceRamses(weth, IRamsesPair(frxETHETH));
 			
-			if( _WETHUSDPrice - _lastWETHUSDPrice >= maxVolatilityAllowance){
+			if( _WETHUSDPrice - _lastWETHUSDPrice >= _lastWETHUSDPrice * maxVolatilityAllowance / TARGET_DECIMAL_1E18){
 				_WETHUSDPrice = _lastWETHUSDPrice;
 			}
 
-			if( _frxETHPrice - _lastFrxETHPrice >= maxVolatilityAllowance){
+			if( _frxETHPrice - _lastFrxETHPrice >= _lastFrxETHPrice * maxVolatilityAllowance / TARGET_DECIMAL_1E18){
 				_frxETHPrice = _lastFrxETHPrice;
 			}
 
