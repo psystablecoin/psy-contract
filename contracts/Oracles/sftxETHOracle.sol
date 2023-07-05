@@ -6,7 +6,6 @@ import "../Interfaces/IUniswapV3Pool.sol";
 import "../Interfaces/IOracle.sol";
 import "../Dependencies/TickMath.sol";
 import "../Oracles/ConcentratedLiquidityBasePriceOracle.sol";
-import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract sfrxETHOracle is IOracle, Ownable, ConcentratedLiquidityBasePriceOracle{
@@ -17,24 +16,23 @@ contract sfrxETHOracle is IOracle, Ownable, ConcentratedLiquidityBasePriceOracle
 	uint256 public volatilityCoolDown;
 	uint256 public lastVolatilityCheck;
 
-	address public WETHUSDC;
-	address public frxETHETH;
-	address public weth;
-	address public usdc;
+	address public immutable WETHUSDC;
+	address public immutable frxETHETH;
+	address public immutable weth;
+	address public immutable usdc;
 	address public keeper;
 	uint256 public sfrxRates;
-	bool public isInitialized;
 
 	// Use to convert a price answer to an 18-digit precision uint
 	uint256 public constant TARGET_DECIMAL_1E18 = 1e18;
 
 	
-	function initialize(
+	constructor(
 		address _WETHUSDC,
 		address _frxETHWETH,
 		address _weth,
 		address _usdc
-	) public {
+	) {
 		require(_WETHUSDC != address(0), "Invalid WETHUSDC address");
 		require(_frxETHWETH != address(0), "Invalid frxETHETH address");
 		require(_weth != address(0), "Invalid weth address");
@@ -44,7 +42,6 @@ contract sfrxETHOracle is IOracle, Ownable, ConcentratedLiquidityBasePriceOracle
 		weth = _weth;
 		usdc = _usdc;
 		keeper = msg.sender;
-		isInitialized = true;
 		maxVolatilityAllowance = 1e17; //10%
 		volatilityCoolDown = 5 minutes;
 		sfrxRates = 1e18;
@@ -70,7 +67,7 @@ contract sfrxETHOracle is IOracle, Ownable, ConcentratedLiquidityBasePriceOracle
 	* @return Price denominated in USDC
 	*/
 	function getDirectPrice() external view returns (uint256) {
-		if(lastVolatilityCheck == 0 || lastVolatilityCheck - block.timestamp >= volatilityCoolDown){
+		if(block.timestamp - lastVolatilityCheck >= volatilityCoolDown){
 
 			uint256 _WETHUSDPrice = _priceUniV3(usdc, IUniswapV3Pool(WETHUSDC));
 			uint256 _frxETHPrice = _priceRamses(weth, IRamsesPair(frxETHETH));
@@ -83,11 +80,11 @@ contract sfrxETHOracle is IOracle, Ownable, ConcentratedLiquidityBasePriceOracle
 			uint256 _WETHUSDPrice = _priceUniV3(usdc, IUniswapV3Pool(WETHUSDC));
 			uint256 _frxETHPrice = _priceRamses(weth, IRamsesPair(frxETHETH));
 			
-			if( _WETHUSDPrice - _lastWETHUSDPrice >= lastVolatilityCheck){
+			if( _WETHUSDPrice - _lastWETHUSDPrice >= maxVolatilityAllowance){
 				_WETHUSDPrice = _lastWETHUSDPrice;
 			}
 
-			if( _frxETHPrice - _lastFrxETHPrice >= lastVolatilityCheck){
+			if( _frxETHPrice - _lastFrxETHPrice >= maxVolatilityAllowance){
 				_frxETHPrice = _lastFrxETHPrice;
 			}
 
@@ -118,11 +115,11 @@ contract sfrxETHOracle is IOracle, Ownable, ConcentratedLiquidityBasePriceOracle
 			uint256 _WETHUSDPrice = _priceUniV3(usdc, IUniswapV3Pool(WETHUSDC));
 			uint256 _frxETHPrice = _priceRamses(weth, IRamsesPair(frxETHETH));
 			
-			if( _WETHUSDPrice - _lastWETHUSDPrice >= lastVolatilityCheck){
+			if( _WETHUSDPrice - _lastWETHUSDPrice >= maxVolatilityAllowance){
 				_WETHUSDPrice = _lastWETHUSDPrice;
 			}
 
-			if( _frxETHPrice - _lastFrxETHPrice >= lastVolatilityCheck){
+			if( _frxETHPrice - _lastFrxETHPrice >= maxVolatilityAllowance){
 				_frxETHPrice = _lastFrxETHPrice;
 			}
 
