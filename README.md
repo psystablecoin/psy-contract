@@ -15,10 +15,10 @@ SLSD can be minted with multiple Liquid Staking Derivatives. To allow multiple c
 PSY, the governance token is not available at launch. the original codebase distributes and mint new tokens when users interact with contracts. The change turned off these functions at launch.
 
 ### Adjusted Oracle mechanism
-Oracle has been changed to support exotic assets
+Oracle has been changed to support exotic assets.
 
-### Future AMO module compatibility
-Algorithmic Market Operation(AMO) is a mechanism to mint token from system and profit from market operations such as providing SLSD to a lending protocol or a DEX as long as it won't impact to the price peg. The system has slack to add this mechanism in the future.
+### Flash minting
+Flashminting to support a variety of arbitrage operations.
 
 ## Getting Started
 
@@ -85,6 +85,9 @@ or for a specific test and specific network e.g `BorrowerOperationsTest` and net
 ```
 npx hardhat test test/core/BorrowerOperationsTest.js -- network hardhat
 ```
+
+Some tests fails because they are forking a real network.
+To test such tests, you need to delete comment outs of `hardhat.config.js`
 
 ### Deploy
 
