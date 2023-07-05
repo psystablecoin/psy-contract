@@ -10,7 +10,7 @@ import "../Dependencies/BaseMath.sol";
 import "../Dependencies/PSYMath.sol";
 import "../Dependencies/Initializable.sol";
 
-contract ChainlinkOracle is Ownable, CheckContract, BaseMath, Initializable, IOracle {
+contract ChainlinkOracle is Ownable, CheckContract, BaseMath, IOracle {
 	using SafeMath for uint256;
 
 	struct ChainlinkResponse {
@@ -67,7 +67,7 @@ contract ChainlinkOracle is Ownable, CheckContract, BaseMath, Initializable, IOr
 		address _adminContract,
 		address _token,
 		address _chainlinkOracle
-	) external initializer onlyOwner {
+	) external onlyOwner {
 		require(!isInitialized, "Already initialized");
 		checkContract(_adminContract);
 		isInitialized = true;
