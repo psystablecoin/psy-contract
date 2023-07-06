@@ -362,6 +362,8 @@ contract('PSYParameters', async (accounts) => {
       assert.equal(expectedMax.toString(), await psyParameters.MAX_BORROWING_FEE(ZERO_ADDRESS))
     })
 
+    /*
+    floor is now zero
     it('setRedemptionFeeFloor: Owner change parameter - Failing SafeCheck', async () => {
       await psyParameters.sanitizeParameters(ZERO_ADDRESS)
 
@@ -372,6 +374,7 @@ contract('PSYParameters', async (accounts) => {
         psyParameters.setRedemptionFeeFloor(ZERO_ADDRESS, REDEMPTION_FEE_FLOOR_SAFETY_MAX.add(toBN(1)))
       )
     })
+    */
 
     it('setRedemptionFeeFloor: Owner change parameter - Valid SafeCheck', async () => {
       const expectedMin = applyDecimalPrecision(REDEMPTION_FEE_FLOOR_SAFETY_MIN)

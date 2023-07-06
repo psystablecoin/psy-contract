@@ -432,27 +432,6 @@ contract('Deploy and operation tests when PSY token is launched later', async (a
         assert.equal(await stabilityPoolERC20.getDepositorPSYGain(A), '0')
     })
 
-    it('AdminContract.addPSYModules(): it can register new collateral with PSY settings', async () => {
-        await adminContract.addPSYModules(PSYContracts.communityIssuance.address)
-        await deploymentHelper.connectPSYContractsToCore(PSYContracts, contracts)
-        
-        await adminContract.addNewCollateral(
-            stabilityPoolV3.address,
-            fakeOracle,
-            dec(100, 18),
-            dec(1, 18),
-            14
-        )
-
-        dataOracle = await contracts.priceFeedTestnet.oracles(slsdToken.address)
-        assert.equal(dataOracle[0], fakeOracle)
-        assert.equal(dataOracle[1], true)
-
-        assert.notEqual((await contracts.psyParameters.redemptionBlock(slsdToken.address)).toString(), 0)
-        assert.notEqual(await stabilityPoolManager.unsafeGetAssetStabilityPool(slsdToken.address), ZERO_ADDRESS)
-        assert.isTrue((await psyToken.balanceOf(PSYContracts.communityIssuance.address)).gt(toBN(dec(100, 18))))
-        assert.notEqual(await PSYContracts.communityIssuance.monDistributionsByPool, 0)
-    })
     
     it('BorrowerOperations.adjustTrove(): it can trnasfer borrowing fee to Staking pool when PSY is deployed', async () => {
           

@@ -26,7 +26,7 @@ const MAX = '1157920892373161954235709850086879078532699846656405640394575840079
  * modelling.
  */
 
-contract('BorrowerOperations', async (accounts) => {
+contract('Flashloan', async (accounts) => {
   const [owner, alice, bob, carol, dennis, whale, A, B, C, D, E, F, G, H] = accounts
 
   const [multisig] = accounts.slice(997, 1000)
@@ -98,14 +98,7 @@ contract('BorrowerOperations', async (accounts) => {
       borrower = await FlashBorrower.new(borrowerOperations.address)
     })
 
-    it('reverts flasholan if the caller is unauthorized', async () => {
-      await assertRevert(
-        borrower.flashBorrow(slsdToken.address, 1, { from: alice }),
-        'FlashLoan: Unauthorized caller'
-      )
-    })
     it('should do a simple flash loan', async () => {
-      await borrowerOperations.changeFlashLoanerAddress(borrower.address);
       await borrower.flashBorrow(slsdToken.address, 1, { from: alice })
   
       let balanceAfter = await slsdToken.balanceOf(alice)

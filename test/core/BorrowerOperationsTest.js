@@ -374,22 +374,22 @@ contract('BorrowerOperations', async (accounts) => {
       const L_SLSDDebt_Asset = await troveManagerHelpers.L_SLSDDebts(erc20.address)
 
       // check Alice and Bob's reward snapshots are zero before they alter their Troves
-      const alice_rewardSnapshot_Before = await troveManagerHelpers.getRewardSnapshots(alice, ZERO_ADDRESS)
+      const alice_rewardSnapshot_Before = await troveManagerHelpers.getRewardSnapshots(ZERO_ADDRESS,alice)
       const alice_ETHrewardSnapshot_Before = alice_rewardSnapshot_Before[0]
       const alice_SLSDDebtRewardSnapshot_Before = alice_rewardSnapshot_Before[1]
 
       const alice_rewardSnapshot_Before_Asset = await troveManagerHelpers.getRewardSnapshots(
-        alice,
-        erc20.address
+        erc20.address,
+        alice
       )
       const alice_ETHrewardSnapshot_Before_Asset = alice_rewardSnapshot_Before_Asset[0]
       const alice_SLSDDebtRewardSnapshot_Before_Asset = alice_rewardSnapshot_Before_Asset[1]
 
-      const bob_rewardSnapshot_Before = await troveManagerHelpers.getRewardSnapshots(bob, ZERO_ADDRESS)
+      const bob_rewardSnapshot_Before = await troveManagerHelpers.getRewardSnapshots(ZERO_ADDRESS, bob)
       const bob_ETHrewardSnapshot_Before = bob_rewardSnapshot_Before[0]
       const bob_SLSDDebtRewardSnapshot_Before = bob_rewardSnapshot_Before[1]
 
-      const bob_rewardSnapshot_Before_Asset = await troveManagerHelpers.getRewardSnapshots(bob, erc20.address)
+      const bob_rewardSnapshot_Before_Asset = await troveManagerHelpers.getRewardSnapshots(erc20.address, bob)
       const bob_ETHrewardSnapshot_Before_Asset = bob_rewardSnapshot_Before_Asset[0]
       const bob_SLSDDebtRewardSnapshot_Before_Asset = bob_rewardSnapshot_Before_Asset[1]
 
@@ -473,26 +473,25 @@ contract('BorrowerOperations', async (accounts) => {
 
       //Check that both Alice and Bob's snapshots of the rewards-per-unit-staked metrics should be updated
       // to the latest values of L_ETH and L_SLSDDebt 
-      const alice_rewardSnapshot_After = await troveManagerHelpers.getRewardSnapshots(alice, ZERO_ADDRESS)
+      const alice_rewardSnapshot_After = await troveManagerHelpers.getRewardSnapshots(ZERO_ADDRESS, alice)
       const alice_ETHrewardSnapshot_After = alice_rewardSnapshot_After[0]
       const alice_SLSDDebtRewardSnapshot_After = alice_rewardSnapshot_After[1]
 
       const alice_rewardSnapshot_After_Asset = await troveManagerHelpers.getRewardSnapshots(
-        alice,
-        erc20.address
+        erc20.address,
+        alice
       )
       const alice_ETHrewardSnapshot_After_Asset = alice_rewardSnapshot_After_Asset[0]
       const alice_SLSDDebtRewardSnapshot_After_Asset = alice_rewardSnapshot_After_Asset[1]
 
-      const bob_rewardSnapshot_After = await troveManagerHelpers.getRewardSnapshots(bob, ZERO_ADDRESS)
+      const bob_rewardSnapshot_After = await troveManagerHelpers.getRewardSnapshots(ZERO_ADDRESS, bob)
       const bob_ETHrewardSnapshot_After = bob_rewardSnapshot_After[0]
       const bob_SLSDDebtRewardSnapshot_After = bob_rewardSnapshot_After[1]
 
-      const bob_rewardSnapshot_After_Asset = await troveManagerHelpers.getRewardSnapshots(bob, erc20.address)
+      const bob_rewardSnapshot_After_Asset = await troveManagerHelpers.getRewardSnapshots(erc20.address, bob)
       const bob_ETHrewardSnapshot_After_Asset = bob_rewardSnapshot_After_Asset[0]
       const bob_SLSDDebtRewardSnapshot_After_Asset = bob_rewardSnapshot_After_Asset[1]
 
-      console.log("a",alice_ETHrewardSnapshot_After, L_ETH)
       assert.isAtMost(th.getDifference(alice_ETHrewardSnapshot_After, L_ETH), 100)
       assert.isAtMost(th.getDifference(alice_SLSDDebtRewardSnapshot_After, L_SLSDDebt), 100)
       assert.isAtMost(th.getDifference(bob_ETHrewardSnapshot_After, L_ETH), 100)
@@ -1076,22 +1075,22 @@ contract('BorrowerOperations', async (accounts) => {
       const L_SLSDDebt_Asset = await troveManagerHelpers.L_SLSDDebts(erc20.address)
 
       // check Alice and Bob's reward snapshots are zero before they alter their Troves
-      const alice_rewardSnapshot_Before = await troveManagerHelpers.getRewardSnapshots(alice, ZERO_ADDRESS)
+      const alice_rewardSnapshot_Before = await troveManagerHelpers.getRewardSnapshots(ZERO_ADDRESS, alice)
       const alice_ETHrewardSnapshot_Before = alice_rewardSnapshot_Before[0]
       const alice_SLSDDebtRewardSnapshot_Before = alice_rewardSnapshot_Before[1]
 
-      const bob_rewardSnapshot_Before = await troveManagerHelpers.getRewardSnapshots(bob, ZERO_ADDRESS)
+      const bob_rewardSnapshot_Before = await troveManagerHelpers.getRewardSnapshots(ZERO_ADDRESS, bob)
       const bob_ETHrewardSnapshot_Before = bob_rewardSnapshot_Before[0]
       const bob_SLSDDebtRewardSnapshot_Before = bob_rewardSnapshot_Before[1]
 
       const alice_rewardSnapshot_Before_Asset = await troveManagerHelpers.getRewardSnapshots(
-        alice,
-        erc20.address
+        erc20.address,
+        alice
       )
       const alice_ETHrewardSnapshot_Before_Asset = alice_rewardSnapshot_Before_Asset[0]
       const alice_SLSDDebtRewardSnapshot_Before_Asset = alice_rewardSnapshot_Before_Asset[1]
 
-      const bob_rewardSnapshot_Before_Asset = await troveManagerHelpers.getRewardSnapshots(bob, erc20.address)
+      const bob_rewardSnapshot_Before_Asset = await troveManagerHelpers.getRewardSnapshots(erc20.address, bob)
       const bob_ETHrewardSnapshot_Before_Asset = bob_rewardSnapshot_Before_Asset[0]
       const bob_SLSDDebtRewardSnapshot_Before_Asset = bob_rewardSnapshot_Before_Asset[1]
 
@@ -1188,22 +1187,22 @@ contract('BorrowerOperations', async (accounts) => {
 
       // After top up, both Alice and Bob's snapshots of the rewards-per-unit-staked metrics should be updated
       // to the latest values of L_ETH and L_SLSDDebt 
-      const alice_rewardSnapshot_After = await troveManagerHelpers.getRewardSnapshots(alice, ZERO_ADDRESS)
+      const alice_rewardSnapshot_After = await troveManagerHelpers.getRewardSnapshots(ZERO_ADDRESS, alice)
       const alice_ETHrewardSnapshot_After = alice_rewardSnapshot_After[0]
       const alice_SLSDDebtRewardSnapshot_After = alice_rewardSnapshot_After[1]
 
-      const bob_rewardSnapshot_After = await troveManagerHelpers.getRewardSnapshots(bob, ZERO_ADDRESS)
+      const bob_rewardSnapshot_After = await troveManagerHelpers.getRewardSnapshots(ZERO_ADDRESS, bob)
       const bob_ETHrewardSnapshot_After = bob_rewardSnapshot_After[0]
       const bob_SLSDDebtRewardSnapshot_After = bob_rewardSnapshot_After[1]
 
       const alice_rewardSnapshot_After_Asset = await troveManagerHelpers.getRewardSnapshots(
-        alice,
-        erc20.address
+        erc20.address,
+        alice
       )
       const alice_ETHrewardSnapshot_After_Asset = alice_rewardSnapshot_After_Asset[0]
       const alice_SLSDDebtRewardSnapshot_After_Asset = alice_rewardSnapshot_After_Asset[1]
 
-      const bob_rewardSnapshot_After_Asset = await troveManagerHelpers.getRewardSnapshots(bob, erc20.address)
+      const bob_rewardSnapshot_After_Asset = await troveManagerHelpers.getRewardSnapshots(erc20.address,bob)
       const bob_ETHrewardSnapshot_After_Asset = bob_rewardSnapshot_After_Asset[0]
       const bob_SLSDDebtRewardSnapshot_After_Asset = bob_rewardSnapshot_After_Asset[1]
 
@@ -7167,14 +7166,14 @@ contract('BorrowerOperations', async (accounts) => {
       await priceFeed.setPrice(dec(100, 18))
 
       // Get Alice's pending reward snapshots
-      const L_ETH_A_Snapshot = (await troveManagerHelpers.getRewardSnapshots(alice, ZERO_ADDRESS))[0]
-      const L_SLSDDebt_A_Snapshot = (await troveManagerHelpers.getRewardSnapshots(alice, ZERO_ADDRESS))[1]
+      const L_ETH_A_Snapshot = (await troveManagerHelpers.getRewardSnapshots(ZERO_ADDRESS, alice))[0]
+      const L_SLSDDebt_A_Snapshot = (await troveManagerHelpers.getRewardSnapshots(ZERO_ADDRESS, alice))[1]
       assert.isTrue(L_ETH_A_Snapshot.gt(toBN('0')))
       assert.isTrue(L_SLSDDebt_A_Snapshot.gt(toBN('0')))
 
-      const L_ETH_A_Snapshot_Asset = (await troveManagerHelpers.getRewardSnapshots(alice, erc20.address))[0]
+      const L_ETH_A_Snapshot_Asset = (await troveManagerHelpers.getRewardSnapshots(erc20.address, alice))[0]
       const L_SLSDDebt_A_Snapshot_Asset = (
-        await troveManagerHelpers.getRewardSnapshots(alice, erc20.address)
+        await troveManagerHelpers.getRewardSnapshots(erc20.address, alice)
       )[1]
       assert.isTrue(L_ETH_A_Snapshot_Asset.gt(toBN('0')))
       assert.isTrue(L_SLSDDebt_A_Snapshot_Asset.gt(toBN('0')))
@@ -7187,17 +7186,17 @@ contract('BorrowerOperations', async (accounts) => {
 
       // Get Alice's pending reward snapshots after Carol's liquidation. Check above 0
       const L_ETH_Snapshot_A_AfterLiquidation = (
-        await troveManagerHelpers.getRewardSnapshots(alice, ZERO_ADDRESS)
+        await troveManagerHelpers.getRewardSnapshots(ZERO_ADDRESS, alice)
       )[0]
       const L_SLSDDebt_Snapshot_A_AfterLiquidation = (
-        await troveManagerHelpers.getRewardSnapshots(alice, ZERO_ADDRESS)
+        await troveManagerHelpers.getRewardSnapshots(ZERO_ADDRESS, alice)
       )[1]
 
       const L_ETH_Snapshot_A_AfterLiquidation_Asset = (
-        await troveManagerHelpers.getRewardSnapshots(alice, erc20.address)
+        await troveManagerHelpers.getRewardSnapshots(erc20.address, alice)
       )[0]
       const L_SLSDDebt_Snapshot_A_AfterLiquidation_Asset = (
-        await troveManagerHelpers.getRewardSnapshots(alice, erc20.address)
+        await troveManagerHelpers.getRewardSnapshots(erc20.address, alice)
       )[1]
 
       assert.isTrue(L_ETH_Snapshot_A_AfterLiquidation.gt(toBN('0')))
@@ -7217,20 +7216,20 @@ contract('BorrowerOperations', async (accounts) => {
 
       // Check Alice's pending reward snapshots are zero
       const L_ETH_Snapshot_A_afterAliceCloses = (
-        await troveManagerHelpers.getRewardSnapshots(alice, ZERO_ADDRESS)
+        await troveManagerHelpers.getRewardSnapshots(ZERO_ADDRESS, alice)
       )[0]
       const L_SLSDDebt_Snapshot_A_afterAliceCloses = (
-        await troveManagerHelpers.getRewardSnapshots(alice, ZERO_ADDRESS)
+        await troveManagerHelpers.getRewardSnapshots(ZERO_ADDRESS, alice)
       )[1]
 
       assert.equal(L_ETH_Snapshot_A_afterAliceCloses, '0')
       assert.equal(L_SLSDDebt_Snapshot_A_afterAliceCloses, '0')
 
       const L_ETH_Snapshot_A_afterAliceCloses_Asset = (
-        await troveManagerHelpers.getRewardSnapshots(alice, erc20.address)
+        await troveManagerHelpers.getRewardSnapshots(erc20.address, alice)
       )[0]
       const L_SLSDDebt_Snapshot_A_afterAliceCloses_Asset = (
-        await troveManagerHelpers.getRewardSnapshots(alice, erc20.address)
+        await troveManagerHelpers.getRewardSnapshots(erc20.address, alice)
       )[1]
 
       assert.equal(L_ETH_Snapshot_A_afterAliceCloses_Asset, '0')
@@ -7685,22 +7684,22 @@ contract('BorrowerOperations', async (accounts) => {
       })
 
       // check Alice and Bob's reward snapshots are zero before they alter their Troves
-      const alice_rewardSnapshot_Before = await troveManagerHelpers.getRewardSnapshots(alice, ZERO_ADDRESS)
+      const alice_rewardSnapshot_Before = await troveManagerHelpers.getRewardSnapshots(ZERO_ADDRESS, alice)
       const alice_ETHrewardSnapshot_Before = alice_rewardSnapshot_Before[0]
       const alice_SLSDDebtRewardSnapshot_Before = alice_rewardSnapshot_Before[1]
 
       const alice_rewardSnapshot_Before_Asset = await troveManagerHelpers.getRewardSnapshots(
-        alice,
-        erc20.address
+        erc20.address,
+        alice
       )
       const alice_ETHrewardSnapshot_Before_Asset = alice_rewardSnapshot_Before_Asset[0]
       const alice_SLSDDebtRewardSnapshot_Before_Asset = alice_rewardSnapshot_Before_Asset[1]
 
-      const bob_rewardSnapshot_Before = await troveManagerHelpers.getRewardSnapshots(bob, ZERO_ADDRESS)
+      const bob_rewardSnapshot_Before = await troveManagerHelpers.getRewardSnapshots(ZERO_ADDRESS, bob)
       const bob_ETHrewardSnapshot_Before = bob_rewardSnapshot_Before[0]
       const bob_SLSDDebtRewardSnapshot_Before = bob_rewardSnapshot_Before[1]
 
-      const bob_rewardSnapshot_Before_Asset = await troveManagerHelpers.getRewardSnapshots(bob, erc20.address)
+      const bob_rewardSnapshot_Before_Asset = await troveManagerHelpers.getRewardSnapshots(erc20.address, bob)
       const bob_ETHrewardSnapshot_Before_Asset = bob_rewardSnapshot_Before_Asset[0]
       const bob_SLSDDebtRewardSnapshot_Before_Asset = bob_rewardSnapshot_Before_Asset[1]
 
@@ -10143,11 +10142,11 @@ contract('BorrowerOperations', async (accounts) => {
       })
 
       // Check Bob's snapshots of L_ETH and L_SLSD equal the respective current values
-      const bob_rewardSnapshot = await troveManagerHelpers.getRewardSnapshots(bob, ZERO_ADDRESS)
+      const bob_rewardSnapshot = await troveManagerHelpers.getRewardSnapshots(ZERO_ADDRESS,bob)
       const bob_ETHrewardSnapshot = bob_rewardSnapshot[0]
       const bob_SLSDDebtRewardSnapshot = bob_rewardSnapshot[1]
 
-      const bob_rewardSnapshot_Asset = await troveManagerHelpers.getRewardSnapshots(bob, erc20.address)
+      const bob_rewardSnapshot_Asset = await troveManagerHelpers.getRewardSnapshots(erc20.address,bob)
       const bob_ETHrewardSnapshot_Asset = bob_rewardSnapshot_Asset[0]
       const bob_SLSDDebtRewardSnapshot_Asset = bob_rewardSnapshot_Asset[1]
 

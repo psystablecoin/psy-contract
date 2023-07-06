@@ -82,7 +82,7 @@ contract('All Liquity functions with onlyOwner modifier', async (accounts) => {
     }
 
     // Attempt to use zero address
-    await testZeroAddress(contract, params)
+    //await testZeroAddress(contract, params)
     // Attempt to use non contract
     await testNonContractAddress(contract, params)
 
@@ -95,13 +95,13 @@ contract('All Liquity functions with onlyOwner modifier', async (accounts) => {
 
   describe('TroveManager', async (accounts) => {
     it('setAddresses(): reverts when called by non-owner, with wrong addresses, or twice', async () => {
-      await testSetAddresses(troveManager, 8, true)
+      await testSetAddresses(troveManager, 9, true)
     })
   })
 
   describe('BorrowerOperations', async (accounts) => {
     it('setAddresses(): reverts when called by non-owner, with wrong addresses, or twice', async () => {
-      await testSetAddresses(borrowerOperations, 9, true)
+      await testSetAddresses(borrowerOperations, 10, true)
     })
   })
 

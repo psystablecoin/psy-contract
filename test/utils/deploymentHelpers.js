@@ -277,7 +277,7 @@ class DeploymentHelper {
       200,
       50,
       500,
-      50
+      50,
     )
 
     await contracts.psyParameters.setCollateralParameters(
@@ -289,7 +289,7 @@ class DeploymentHelper {
       200,
       50,
       500,
-      50
+      50,
     )
 
   }
