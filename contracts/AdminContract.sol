@@ -100,16 +100,5 @@ contract AdminContract is Ownable, Initializable {
 		
 	}
 
-	/*
-	 * Add PSY token modules later if it is not added at launch
-	 */
-	/*
-	function addPSYModules(address _communityIssuanceAddress) external onlyOwner {
-		require(!isPSYReady,"PSY modules already registered");
-		CheckContract(_communityIssuanceAddress);
-		communityIssuance = ICommunityIssuance(_communityIssuanceAddress);
-		isPSYReady = true;
-	}
-	*/
 
 }

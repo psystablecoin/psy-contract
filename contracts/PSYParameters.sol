@@ -146,6 +146,7 @@ contract PSYParameters is IPSYParameters, Ownable, CheckContract, Initializable 
 		setPercentDivisor(_asset, precentDivisor);
 		setMaxBorrowingFee(_asset, maxBorrowingFee);
 		setBorrowingFeeFloor(_asset, borrowingFeeFloor);
+		setMaxRedemptionFee(_asset, 10000);
 		setRedemptionFeeFloor(_asset, redemptionFeeFloor);
 	}
 
