@@ -10,11 +10,16 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract sfrxETHOracle is IOracle, Ownable, ConcentratedLiquidityBasePriceOracle{
 
-	mapping(bytes => uint256) public lastTimeResponses;
+	struct VolatilityStats {
+		uint256 lastTimeResponse;
+		uint256 lastCheckTime;
+		bool isCoolDown;
+	}
+	
+	mapping(bytes => VolatilityStats) public assetStats;
 
 	uint256 public maxVolatilityAllowance;
-	uint256 public volatilityCoolDown;
-	uint256 public lastVolatilityCheck;
+	uint256 public volatilityCoolDownTime;
 
 	address public immutable WETHUSDC;
 	address public immutable frxETHETH;
@@ -22,6 +27,7 @@ contract sfrxETHOracle is IOracle, Ownable, ConcentratedLiquidityBasePriceOracle
 	address public immutable usdc;
 	address public keeper;
 	uint256 public sfrxRates;
+	bool initialPriceFetched;
 
 	// Use to convert a price answer to an 18-digit precision uint
 	uint256 public constant TARGET_DECIMAL_1E18 = 1e18;
@@ -42,8 +48,8 @@ contract sfrxETHOracle is IOracle, Ownable, ConcentratedLiquidityBasePriceOracle
 		weth = _weth;
 		usdc = _usdc;
 		keeper = msg.sender;
-		maxVolatilityAllowance = 1e17; //10%
-		volatilityCoolDown = 5 minutes;
+		maxVolatilityAllowance = 5e16; //5%
+		volatilityCoolDownTime = 5 minutes;
 		sfrxRates = 1e18;
 	}
 
@@ -59,7 +65,7 @@ contract sfrxETHOracle is IOracle, Ownable, ConcentratedLiquidityBasePriceOracle
 
 	function setSafetyParams(uint256 _volatilityAllowance, uint256 _volatilityCoolDown) external onlyOwner {
 		maxVolatilityAllowance = _volatilityAllowance;
-		volatilityCoolDown = _volatilityCoolDown;
+		volatilityCoolDownTime = _volatilityCoolDown;
 	}
 
 	/**
@@ -67,66 +73,116 @@ contract sfrxETHOracle is IOracle, Ownable, ConcentratedLiquidityBasePriceOracle
 	* @return Price denominated in USDC
 	*/
 	function getDirectPrice() external view returns (uint256) {
-		if(block.timestamp - lastVolatilityCheck >= volatilityCoolDown){
-
-			uint256 _WETHUSDPrice = _priceUniV3(usdc, IUniswapV3Pool(WETHUSDC));
-			uint256 _frxETHPrice = _priceRamses(weth, IRamsesPair(frxETHETH));
-			uint256 _frxETHPriceUSD = _WETHUSDPrice * _frxETHPrice / TARGET_DECIMAL_1E18;
-			return _frxETHPriceUSD * sfrxRates / TARGET_DECIMAL_1E18;
-
+		uint _lastWETHUSDPrice = assetStats[bytes("WETHUSDC")].lastTimeResponse;
+		uint _lastFrxETHPrice = assetStats[bytes("frxETHPrice")].lastTimeResponse;
+		uint256 _WETHUSDPrice = _priceUniV3(usdc, IUniswapV3Pool(WETHUSDC));
+		uint256 _frxETHPrice = _priceRamses(weth, IRamsesPair(frxETHETH));
+		
+		if( _WETHUSDPrice > _lastWETHUSDPrice){
+			if(_WETHUSDPrice - _lastWETHUSDPrice >= _lastWETHUSDPrice * maxVolatilityAllowance / TARGET_DECIMAL_1E18){
+				_WETHUSDPrice = _checkPriceAndCoolDown(bytes("WETHUSDC"), _WETHUSDPrice, _lastWETHUSDPrice, true);
+			}
 		} else {
-			uint _lastWETHUSDPrice = lastTimeResponses[bytes("WETHUSDC")];
-			uint _lastFrxETHPrice = lastTimeResponses[bytes("frxETHPrice")];
-			uint256 _WETHUSDPrice = _priceUniV3(usdc, IUniswapV3Pool(WETHUSDC));
-			uint256 _frxETHPrice = _priceRamses(weth, IRamsesPair(frxETHETH));
-			
-			if( _WETHUSDPrice - _lastWETHUSDPrice >= _lastWETHUSDPrice * maxVolatilityAllowance / TARGET_DECIMAL_1E18){
-				_WETHUSDPrice = _lastWETHUSDPrice;
+			if( _lastWETHUSDPrice - _WETHUSDPrice >= _lastWETHUSDPrice * maxVolatilityAllowance / TARGET_DECIMAL_1E18){
+				_WETHUSDPrice = _checkPriceAndCoolDown(bytes("WETHUSDC"), _WETHUSDPrice, _lastWETHUSDPrice, false);
 			}
-
-			if( _frxETHPrice - _lastFrxETHPrice >= _lastFrxETHPrice * maxVolatilityAllowance / TARGET_DECIMAL_1E18){
-				_frxETHPrice = _lastFrxETHPrice;
-			}
-
-			uint256 _frxETHPriceUSD = _WETHUSDPrice * _frxETHPrice / TARGET_DECIMAL_1E18;
-			return _frxETHPriceUSD * sfrxRates / TARGET_DECIMAL_1E18;
 		}
+
+		if( _frxETHPrice > _lastFrxETHPrice){
+			if( _frxETHPrice - _lastFrxETHPrice >= _lastFrxETHPrice * maxVolatilityAllowance / TARGET_DECIMAL_1E18){
+				_frxETHPrice = _checkPriceAndCoolDown(bytes("frxETHPrice"), _frxETHPrice, _lastFrxETHPrice, true);
+			}
+		} else {
+			if( _lastFrxETHPrice - _frxETHPrice >= _lastFrxETHPrice * maxVolatilityAllowance / TARGET_DECIMAL_1E18){
+				_frxETHPrice = _checkPriceAndCoolDown(bytes("frxETHPrice"), _frxETHPrice, _lastFrxETHPrice, false);
+			}
+		}
+
+		uint256 _frxETHPriceUSD = _WETHUSDPrice * _frxETHPrice / TARGET_DECIMAL_1E18;
+		return _frxETHPriceUSD * sfrxRates / TARGET_DECIMAL_1E18;
 	}
 
 	/**
-	* @notice Get the token price price for an underlying token address.
+	* @notice Get and Update the token price price for an underlying token address.
 	* @return Price denominated in　USDC
 	*/
 	function fetchPrice() external returns (uint256) {
-		
-		if(lastVolatilityCheck == 0 || lastVolatilityCheck - block.timestamp >= volatilityCoolDown){
-			uint256 _WETHUSDPrice = _priceUniV3(usdc, IUniswapV3Pool(WETHUSDC));
-			uint256 _frxETHPrice = _priceRamses(weth, IRamsesPair(frxETHETH));
-			uint256 _frxETHPriceUSD = _WETHUSDPrice * _frxETHPrice / TARGET_DECIMAL_1E18;
-
-			lastTimeResponses[bytes("WETHUSDC")] = _WETHUSDPrice;
-			lastTimeResponses[bytes("frxETHPrice")] = _frxETHPrice;
-			lastVolatilityCheck = block.timestamp;
-
-			return _frxETHPriceUSD * sfrxRates / TARGET_DECIMAL_1E18;
-		} else {
-			uint _lastWETHUSDPrice = lastTimeResponses[bytes("WETHUSDC")];
-			uint _lastFrxETHPrice = lastTimeResponses[bytes("frxETHPrice")];
-			uint256 _WETHUSDPrice = _priceUniV3(usdc, IUniswapV3Pool(WETHUSDC));
-			uint256 _frxETHPrice = _priceRamses(weth, IRamsesPair(frxETHETH));
 			
-			if( _WETHUSDPrice - _lastWETHUSDPrice >= _lastWETHUSDPrice * maxVolatilityAllowance / TARGET_DECIMAL_1E18){
-				_WETHUSDPrice = _lastWETHUSDPrice;
-			}
+		uint256 _lastWETHUSDPrice = assetStats[bytes("WETHUSDC")].lastTimeResponse;
+		uint256 _lastFrxETHPrice = assetStats[bytes("frxETHPrice")].lastTimeResponse;
+		uint256 _WETHUSDPrice = _priceUniV3(usdc, IUniswapV3Pool(WETHUSDC));
+		uint256 _frxETHPrice = _priceRamses(weth, IRamsesPair(frxETHETH));
 
+		if(!initialPriceFetched){
+			assetStats[bytes("WETHUSDC")].lastTimeResponse = _WETHUSDPrice;
+			assetStats[bytes("frxETHPrice")].lastTimeResponse = _frxETHPrice;
+			assetStats[bytes("WETHUSDC")].lastCheckTime = block.timestamp;
+			assetStats[bytes("frxETHPrice")].lastCheckTime = block.timestamp;
+			_lastWETHUSDPrice = _WETHUSDPrice;
+			_lastFrxETHPrice = _frxETHPrice;	
+			initialPriceFetched = true;
+		}
+		
+		if( _WETHUSDPrice > _lastWETHUSDPrice){
+			if(_WETHUSDPrice - _lastWETHUSDPrice >= _lastWETHUSDPrice * maxVolatilityAllowance / TARGET_DECIMAL_1E18){
+				_WETHUSDPrice = _updatePriceAndCoolDown(bytes("WETHUSDC"), _WETHUSDPrice, _lastWETHUSDPrice, true);
+			}
+		} else {
+			if( _lastWETHUSDPrice - _WETHUSDPrice >= _lastWETHUSDPrice * maxVolatilityAllowance / TARGET_DECIMAL_1E18){
+				_WETHUSDPrice = _updatePriceAndCoolDown(bytes("WETHUSDC"), _WETHUSDPrice, _lastWETHUSDPrice, false);
+			}
+		}
+
+		if( _frxETHPrice > _lastFrxETHPrice){
 			if( _frxETHPrice - _lastFrxETHPrice >= _lastFrxETHPrice * maxVolatilityAllowance / TARGET_DECIMAL_1E18){
-				_frxETHPrice = _lastFrxETHPrice;
+				_frxETHPrice = _updatePriceAndCoolDown(bytes("frxETHPrice"), _frxETHPrice, _lastFrxETHPrice, true);
 			}
+		} else {
+			if( _lastFrxETHPrice - _frxETHPrice >= _lastFrxETHPrice * maxVolatilityAllowance / TARGET_DECIMAL_1E18){
+				_frxETHPrice = _updatePriceAndCoolDown(bytes("frxETHPrice"), _frxETHPrice, _lastFrxETHPrice, false);
+			}
+		}
 
-			uint256 _frxETHPriceUSD = _WETHUSDPrice * _frxETHPrice / TARGET_DECIMAL_1E18;
-			return _frxETHPriceUSD * sfrxRates / TARGET_DECIMAL_1E18;
+		uint256 _frxETHPriceUSD = _WETHUSDPrice * _frxETHPrice / TARGET_DECIMAL_1E18;
+		return _frxETHPriceUSD * sfrxRates / TARGET_DECIMAL_1E18;
+
+	}
+
+	function _checkPriceAndCoolDown(bytes memory _asset, uint256 _current, uint256 _recorded, bool _isUpward) internal view returns (uint256 _returnPrice){
+		_returnPrice = _current;
+		if (!assetStats[_asset].isCoolDown){
+			_returnPrice = _returnLimitVolatility(_recorded, _isUpward);
+		} else {
+			if(volatilityCoolDownTime >= block.timestamp - assetStats[_asset].lastCheckTime){
+				_returnPrice = _returnLimitVolatility(_recorded, _isUpward);
+			}
 		}
 	}
+
+	function _updatePriceAndCoolDown(bytes memory _asset, uint256 _current, uint256 _recorded, bool _isUpward) internal returns (uint256 _returnPrice){
+		_returnPrice = _current;
+		if (!assetStats[_asset].isCoolDown){
+			assetStats[_asset].isCoolDown = true;
+			_returnPrice = _returnLimitVolatility(_recorded, _isUpward);
+		} else {
+			if(block.timestamp - assetStats[_asset].lastCheckTime >= volatilityCoolDownTime){
+				assetStats[_asset].lastCheckTime = block.timestamp;
+				assetStats[_asset].isCoolDown = false;
+				assetStats[_asset].lastTimeResponse = _current;
+			} else {
+				_returnPrice = _returnLimitVolatility(_recorded, _isUpward);
+			}
+		}
+	}
+
+	function _returnLimitVolatility(uint256 _recorded, bool _isUpward) internal view returns (uint256) {
+		if(_isUpward){
+			return _recorded + _recorded * maxVolatilityAllowance / TARGET_DECIMAL_1E18;
+		} else {
+			return _recorded - _recorded * maxVolatilityAllowance / TARGET_DECIMAL_1E18;
+		}
+	}
+
 
 	/**
 	* @dev Fetches the price for a token from Solidly Pair
