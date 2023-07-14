@@ -2,13 +2,11 @@
 pragma solidity >=0.8.0;
 
 import "../Interfaces/IRamsesPair.sol";
-import "../Interfaces/IUniswapV3Pool.sol";
 import "../Interfaces/IOracle.sol";
-import "../Dependencies/TickMath.sol";
-import "../Oracles/ConcentratedLiquidityBasePriceOracle.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-contract sfrxETHOracle is IOracle, Ownable, ConcentratedLiquidityBasePriceOracle{
+contract sfrxETHOracle is IOracle, Ownable{
 
 	struct VolatilityStats {
 		uint256 lastRate;
@@ -23,6 +21,7 @@ contract sfrxETHOracle is IOracle, Ownable, ConcentratedLiquidityBasePriceOracle
 	address public immutable chainlink;
 	address public immutable frxETHETH;
 	address public immutable weth;
+	address public immutable frxETH;
 	address public immutable sfrxETH;
 	address public keeper;
 
@@ -32,6 +31,7 @@ contract sfrxETHOracle is IOracle, Ownable, ConcentratedLiquidityBasePriceOracle
 	constructor(
 		address _frxETHWETH,
 		address _weth,
+		address _frxETH,
 		address _sfrxETH,
 		address _chainlink
 	) {
@@ -39,12 +39,16 @@ contract sfrxETHOracle is IOracle, Ownable, ConcentratedLiquidityBasePriceOracle
 		require(_weth != address(0), "Invalid weth address");
 		require(_chainlink != address(0), "Invalid chainlink address");
 		
-		frxETHETH = _frxETHWETH;
 		weth = _weth;
+		frxETH = _frxETH;
+		frxETHETH = _frxETHWETH;
 		chainlink = _chainlink;
 		sfrxETH = _sfrxETH;
 		keeper = msg.sender;
 		maxDeviationAllowance = 3e16; //3%
+
+		assetStats[frxETH].checkFrequency = 3600; // 1 hour
+		assetStats[sfrxETH].checkFrequency = 1 days;
 	}
 
 	function setKeeper(address _keeper) external onlyOwner {
@@ -59,7 +63,7 @@ contract sfrxETHOracle is IOracle, Ownable, ConcentratedLiquidityBasePriceOracle
 	function getDirectPrice() external view returns (uint256) {
 		uint256 _WETHUSDPrice = IOracle(chainlink).getDirectPrice();
 		uint256 _frxETHPrice = priceRamses(weth, IRamsesPair(frxETHETH));
-		uint256 _frxETHAnchorPrice = assetStats[frxETHETH].lastRate;
+		uint256 _frxETHAnchorPrice = assetStats[frxETH].lastRate;
 		uint256 _sfrxRates = assetStats[sfrxETH].lastRate;
 
 		require(_validatePrice(_frxETHPrice, _frxETHAnchorPrice), "Price deviation too large");
@@ -76,7 +80,7 @@ contract sfrxETHOracle is IOracle, Ownable, ConcentratedLiquidityBasePriceOracle
 			
 		uint256 _WETHUSDPrice = IOracle(chainlink).fetchPrice();
 		uint256 _frxETHPrice = priceRamses(weth, IRamsesPair(frxETHETH));
-		uint256 _frxETHAnchorPrice = assetStats[frxETHETH].lastRate;
+		uint256 _frxETHAnchorPrice = assetStats[frxETH].lastRate;
 		uint256 _sfrxRates = assetStats[sfrxETH].lastRate;
 
 		require(_validatePrice(_frxETHPrice, _frxETHAnchorPrice), "Price deviation too large");
@@ -87,8 +91,12 @@ contract sfrxETHOracle is IOracle, Ownable, ConcentratedLiquidityBasePriceOracle
 	}
 
 	function isRateUpdateNeeded (address _token) external view returns (bool) {
+		require(assetStats[_token].checkFrequency > 0, "Invalid token address");
 		uint256 _updateTime = assetStats[_token].lastCheckTime +  assetStats[_token].checkFrequency; 
-		bool isPriceValid = _validatePrice(priceRamses(weth, IRamsesPair(frxETHETH)), assetStats[_token].lastRate);
+		bool isPriceValid = true;
+		if(_token == frxETH){
+			isPriceValid = _validatePrice(priceRamses(weth, IRamsesPair(frxETH)), assetStats[_token].lastRate);
+		}
 		if(block.timestamp > _updateTime || !isPriceValid ){
 			return true;
 		} else {
@@ -101,6 +109,7 @@ contract sfrxETHOracle is IOracle, Ownable, ConcentratedLiquidityBasePriceOracle
 	}
 	
 	function setCheckFrequency(address _token, uint256 _frequency) external onlyOwner {
+		require(assetStats[_token].checkFrequency > 0, "Invalid token address");
 		assetStats[_token].checkFrequency = _frequency;
 	}
 
@@ -110,7 +119,9 @@ contract sfrxETHOracle is IOracle, Ownable, ConcentratedLiquidityBasePriceOracle
 	
 	function commitRate(address _token, uint256 _rates) external {
 		require(msg.sender == keeper, "Only keeper can commit rates");
+		require(assetStats[_token].checkFrequency > 0, "Invalid token address");
 		assetStats[_token].lastRate = _rates;
+		assetStats[_token].lastCheckTime = block.timestamp;
 	}
 
 	function getRate(address _token) external view returns (uint256) {
@@ -147,13 +158,13 @@ contract sfrxETHOracle is IOracle, Ownable, ConcentratedLiquidityBasePriceOracle
 
 	function _validatePrice(uint256 _price, uint256 _anchorPrice) internal view returns (bool) {
 		require(_price > 0, "Price is zero");
-		uint _maxDeviation = _anchorPrice * maxDeviationAllowance / TARGET_DECIMAL_1E18;
+		uint256 _maxDeviation = _anchorPrice * maxDeviationAllowance / TARGET_DECIMAL_1E18;
 		if(_price > _anchorPrice){
-			uint _deviation = _price - _anchorPrice;
-			return _deviation >= _maxDeviation;
+			uint256 _deviation = _price - _anchorPrice;
+			return _deviation <= _maxDeviation;
 		} else {
-			uint _deviation = _anchorPrice - _price;
-			return _deviation >= _maxDeviation;
+			uint256 _deviation = _anchorPrice - _price;
+			return _deviation <= _maxDeviation;
 		}
 	}
 	

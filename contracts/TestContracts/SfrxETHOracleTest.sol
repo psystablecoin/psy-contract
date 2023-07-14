@@ -10,37 +10,121 @@ import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "hardhat/console.sol";
 
-contract SfrxETHOracleTest is ConcentratedLiquidityBasePriceOracle, Ownable{
+contract SfrxETHOracleTest is Ownable{
 
 	struct VolatilityStats {
-		uint256 lastTimeResponse;
+		uint256 lastRate;
 		uint256 lastCheckTime;
-		bool isCoolDown;
+		uint256 checkFrequency;
 	}
 	
+	mapping(address => VolatilityStats) public assetStats;
 
-	mapping(bytes => VolatilityStats) public assetStats;
-	mapping(uint256 => uint256) public price;
+	uint256 public maxDeviationAllowance;
 
-	uint256 public maxVolatilityAllowance;
-	uint256 public volatilityCoolDownTime;
-	
-	uint256 public sfrxRates;
-	bool initialPriceFetched;
+	address public immutable weth;
+	address public immutable frxETH;
+	address public immutable sfrxETH;
+	address public keeper;
 
-	// Use to convert a price answer to an 18-digit precision uint
+	//only for test
+	uint256 public frxETHPrice;
+	uint256 public ethPrice;
+
+	// Use to convert a price answer to an 18-digit precision uint256
 	uint256 public constant TARGET_DECIMAL_1E18 = 1e18;
 
-	constructor() {
-		maxVolatilityAllowance = 5e16; //5%
-		volatilityCoolDownTime = 5 minutes;
-		sfrxRates = 1e18;
+	constructor(
+		address _weth,
+		address _frxETH,
+		address _sfrxETH
+	) {
+		require(_weth != address(0), "Invalid weth address");
+				
+		weth = _weth;
+		frxETH = _frxETH;
+		sfrxETH = _sfrxETH;
+		keeper = msg.sender;
+		maxDeviationAllowance = 3e16; //3%
+
+		frxETHPrice = 1e18;
+		ethPrice = 2000e18;
+
+		assetStats[frxETH].checkFrequency = 3600; // 1 hour
+		assetStats[sfrxETH].checkFrequency = 1 days;
+	}
+
+	function setKeeper(address _keeper) external onlyOwner {
+		require(_keeper != address(0), "Invalid keeper address");
+		keeper = _keeper;
+	}
+
+	function setWethPrice(uint256 _price) external {
+		ethPrice = _price;
+	}
+
+	function setFrxETHPrice(uint256 _price) external {
+		frxETHPrice = _price;
+	}
+
+	/**
+	* @notice Get the token price price for an underlying token address.
+	* @return Price denominated in USDC
+	*/
+	function getDirectPrice() external view returns (uint256) {
+		uint256 _WETHUSDPrice = ethPrice;
+		uint256 _frxETHPrice = frxETHPrice;
+		uint256 _frxETHAnchorPrice = assetStats[frxETH].lastRate;
+		uint256 _sfrxRates = assetStats[sfrxETH].lastRate;
+
+		require(_validatePrice(_frxETHPrice, _frxETHAnchorPrice), "Price deviation too large");
+
+		uint256 _frxETHPriceUSD = _WETHUSDPrice * _frxETHPrice / TARGET_DECIMAL_1E18;
+		return _frxETHPriceUSD * _sfrxRates / TARGET_DECIMAL_1E18;
+	}
+
+	function isRateUpdateNeeded (address _token) external view returns (bool) {
+		require(assetStats[_token].checkFrequency > 0, "Invalid token address");
+		uint256 _updateTime = assetStats[_token].lastCheckTime +  assetStats[_token].checkFrequency; 
+		bool isPriceValid = true;
+		if(_token == frxETH){
+			isPriceValid = _validatePrice(frxETHPrice, assetStats[_token].lastRate);
+		}
+		if(block.timestamp > _updateTime || !isPriceValid ){
+			return true;
+		} else {
+			return false;
+		}
+	}
+
+	function setDeviationAlloance(uint256 _allowance) external onlyOwner {
+		maxDeviationAllowance = _allowance;
+	}
+	
+	function setCheckFrequency(address _token, uint256 _frequency) external onlyOwner {
+		require(assetStats[_token].checkFrequency > 0, "Invalid token address");
+		assetStats[_token].checkFrequency = _frequency;
+	}
+
+	function getCheckFrequency(address _token) external view returns (uint256) {
+		return assetStats[_token].checkFrequency;
+	}
+	
+	function commitRate(address _token, uint256 _rates) external {
+		require(msg.sender == keeper, "Only keeper can commit rates");
+		require(assetStats[_token].checkFrequency > 0, "Invalid token address");
+		assetStats[_token].lastRate = _rates;
+		assetStats[_token].lastCheckTime = block.timestamp;
+	}
+
+	function getRate(address _token) external view returns (uint256) {
+		return assetStats[_token].lastRate;
 	}
 
 	/**
 	* @dev Fetches the price for a token from Solidly Pair
 	*/
-	function priceRamses(address _baseToken, IRamsesPair _pair) external view returns (uint256) {
+	function priceRamses(address _baseToken, IRamsesPair _pair) public view returns (uint256) {
 
 		address _token0 = _pair.token0();
 		address _token1 = _pair.token1();
@@ -62,163 +146,19 @@ contract SfrxETHOracleTest is ConcentratedLiquidityBasePriceOracle, Ownable{
 		}
 	
 		return _tokenPriceScaled;
+
+	}
+
+	function _validatePrice(uint256 _price, uint256 _anchorPrice) internal view returns (bool) {
+		require(_price > 0, "Price is zero");
+		uint256 _maxDeviation = _anchorPrice * maxDeviationAllowance / TARGET_DECIMAL_1E18;
+		if(_price > _anchorPrice){
+			uint256 _deviation = _price - _anchorPrice;
+			return _deviation <= _maxDeviation;
+		} else {
+			uint256 _deviation = _anchorPrice - _price;
+			return _deviation <= _maxDeviation;
+		}
 	}
 	
-	function priceUniV3(address _baseToken, IUniswapV3Pool _pool) external view returns (uint256) {
-		uint32[] memory secondsAgos = new uint32[](2);
-		uint256 _twapWindow = 5 minutes;
-
-		secondsAgos[0] = uint32(_twapWindow);
-		secondsAgos[1] = 0;
-
-		(int56[] memory tickCumulatives, ) = _pool.observe(secondsAgos);
-
-		int24 _tick = int24((tickCumulatives[1] - tickCumulatives[0]) / int56(int256(_twapWindow)));
-		uint160 _sqrtPriceX96 = TickMath.getSqrtRatioAtTick(_tick);
-
-		uint256 _tokenPrice = getPriceX96FromSqrtPriceX96(_pool.token1(), _baseToken, _sqrtPriceX96);
-
-		// scale tokenPrice by 1e18
-		uint256 _baseTokenDecimals = uint256(IERC20Metadata(_baseToken).decimals());
-		uint256 _tokenPriceScaled;
-
-		if (_baseTokenDecimals > 18) {
-			_tokenPriceScaled = _tokenPrice / (10**(_baseTokenDecimals - 18));
-		} else {
-			_tokenPriceScaled = _tokenPrice * (10**(18 - _baseTokenDecimals));
-		}
-
-		return _tokenPriceScaled;
-	}
-
-	function getPriceMock(uint _id)public view returns (uint256){
-		return price[_id];
-	}
-
-	function setPriceMock(uint _id, uint _price)public{
-		price[_id] = _price;
-	}
-
-	function commitRates(uint256 _rates) external {
-		sfrxRates = _rates;
-	}
-
-	function setSafetyParams(uint256 _volatilityAllowance, uint256 _volatilityCoolDown) external onlyOwner {
-		maxVolatilityAllowance = _volatilityAllowance;
-		volatilityCoolDownTime = _volatilityCoolDown;
-	}
-
-	function getDirectPrice() external view returns (uint256) {
-		uint _lastWETHUSDPrice = assetStats[bytes("WETHUSDC")].lastTimeResponse;
-		uint _lastFrxETHPrice = assetStats[bytes("frxETHPrice")].lastTimeResponse;
-		uint256 _WETHUSDPrice = getPriceMock(0);
-		uint256 _frxETHPrice = getPriceMock(1);
-		
-		if( _WETHUSDPrice > _lastWETHUSDPrice){
-			if(_WETHUSDPrice - _lastWETHUSDPrice >= _lastWETHUSDPrice * maxVolatilityAllowance / TARGET_DECIMAL_1E18){
-				_WETHUSDPrice = checkPriceAndCoolDown(bytes("WETHUSDC"), _WETHUSDPrice, _lastWETHUSDPrice, true);
-			}
-		} else {
-			if( _lastWETHUSDPrice - _WETHUSDPrice >= _lastWETHUSDPrice * maxVolatilityAllowance / TARGET_DECIMAL_1E18){
-				_WETHUSDPrice = checkPriceAndCoolDown(bytes("WETHUSDC"), _WETHUSDPrice, _lastWETHUSDPrice, false);
-			}
-		}
-
-		if( _frxETHPrice > _lastFrxETHPrice){
-			if( _frxETHPrice - _lastFrxETHPrice >= _lastFrxETHPrice * maxVolatilityAllowance / TARGET_DECIMAL_1E18){
-				_frxETHPrice = checkPriceAndCoolDown(bytes("frxETHPrice"), _frxETHPrice, _lastFrxETHPrice, true);
-			}
-		} else {
-			if( _lastFrxETHPrice - _frxETHPrice >= _lastFrxETHPrice * maxVolatilityAllowance / TARGET_DECIMAL_1E18){
-				_frxETHPrice = checkPriceAndCoolDown(bytes("frxETHPrice"), _frxETHPrice, _lastFrxETHPrice, false);
-			}
-		}
-
-		uint256 _frxETHPriceUSD = _WETHUSDPrice * _frxETHPrice / TARGET_DECIMAL_1E18;
-		return _frxETHPriceUSD * sfrxRates / TARGET_DECIMAL_1E18;
-	}
-
-	function fetchPrice() external returns (uint256) {
-			
-		uint256 _lastWETHUSDPrice = assetStats[bytes("WETHUSDC")].lastTimeResponse;
-		uint256 _lastFrxETHPrice = assetStats[bytes("frxETHPrice")].lastTimeResponse;
-		uint256 _WETHUSDPrice = getPriceMock(0);
-		uint256 _frxETHPrice = getPriceMock(1);
-
-		if(!initialPriceFetched){
-			assetStats[bytes("WETHUSDC")].lastTimeResponse = _WETHUSDPrice;
-			assetStats[bytes("frxETHPrice")].lastTimeResponse = _frxETHPrice;
-			assetStats[bytes("WETHUSDC")].lastCheckTime = block.timestamp;
-			assetStats[bytes("frxETHPrice")].lastCheckTime = block.timestamp;
-			_lastWETHUSDPrice = _WETHUSDPrice;
-			_lastFrxETHPrice = _frxETHPrice;	
-			initialPriceFetched = true;
-		}
-		
-		if( _WETHUSDPrice > _lastWETHUSDPrice){
-			if(_WETHUSDPrice - _lastWETHUSDPrice >= _lastWETHUSDPrice * maxVolatilityAllowance / TARGET_DECIMAL_1E18){
-				console.log("WETH Price too high");
-				_WETHUSDPrice = updatePriceAndCoolDown(bytes("WETHUSDC"), _WETHUSDPrice, _lastWETHUSDPrice, true);
-			}
-		} else {
-			if( _lastWETHUSDPrice - _WETHUSDPrice >= _lastWETHUSDPrice * maxVolatilityAllowance / TARGET_DECIMAL_1E18){
-				console.log("WETH Price too low");
-				_WETHUSDPrice = updatePriceAndCoolDown(bytes("WETHUSDC"), _WETHUSDPrice, _lastWETHUSDPrice, false);
-			}
-		}
-
-		if( _frxETHPrice > _lastFrxETHPrice){
-			if( _frxETHPrice - _lastFrxETHPrice >= _lastFrxETHPrice * maxVolatilityAllowance / TARGET_DECIMAL_1E18){
-				_frxETHPrice = updatePriceAndCoolDown(bytes("frxETHPrice"), _frxETHPrice, _lastFrxETHPrice, true);
-			}
-		} else {
-			if( _lastFrxETHPrice - _frxETHPrice >= _lastFrxETHPrice * maxVolatilityAllowance / TARGET_DECIMAL_1E18){
-				_frxETHPrice = updatePriceAndCoolDown(bytes("frxETHPrice"), _frxETHPrice, _lastFrxETHPrice, false);
-			}
-		}
-
-		uint256 _frxETHPriceUSD = _WETHUSDPrice * _frxETHPrice / TARGET_DECIMAL_1E18;
-		return _frxETHPriceUSD * sfrxRates / TARGET_DECIMAL_1E18;
-
-	}
-
-	function checkPriceAndCoolDown(bytes memory _asset, uint256 _current, uint256 _recorded, bool _isUpward) internal view returns (uint256 _returnPrice){
-		_returnPrice = _current;
-		if (!assetStats[_asset].isCoolDown){
-			_returnPrice = returnLimitVolatility(_recorded, _isUpward);
-		} else {
-			if(volatilityCoolDownTime >= block.timestamp - assetStats[_asset].lastCheckTime){
-				_returnPrice = returnLimitVolatility(_recorded, _isUpward);
-			}
-		}
-	}
-
-	function updatePriceAndCoolDown(bytes memory _asset, uint256 _current, uint256 _recorded, bool _isUpward) internal returns (uint256 _returnPrice){
-		_returnPrice = _current;
-		if (!assetStats[_asset].isCoolDown){
-			console.log("Cooling down started");
-			assetStats[_asset].isCoolDown = true;
-			_returnPrice = returnLimitVolatility(_recorded, _isUpward);
-		} else {
-			if(block.timestamp - assetStats[_asset].lastCheckTime >= volatilityCoolDownTime){
-				console.log("Cooling down ended");
-				assetStats[_asset].lastCheckTime = block.timestamp;
-				assetStats[_asset].isCoolDown = false;
-				assetStats[_asset].lastTimeResponse = _current;
-			} else {
-				console.log("Cooling down not ended");
-				_returnPrice = returnLimitVolatility(_recorded, _isUpward);
-			}
-		}
-	}
-
-	function returnLimitVolatility(uint256 _recorded, bool _isUpward) internal view returns (uint256) {
-		if(_isUpward){
-			return _recorded + _recorded * maxVolatilityAllowance / TARGET_DECIMAL_1E18;
-		} else {
-			return _recorded - _recorded * maxVolatilityAllowance / TARGET_DECIMAL_1E18;
-		}
-	}
-
-
 }
