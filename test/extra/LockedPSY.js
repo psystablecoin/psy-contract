@@ -82,8 +82,7 @@ describe('Locked PSY', function () {
 
       await LockedPSY.addEntityVesting(vestingAddress, vestingAmount)
 
-      await network.provider.send('evm_increaseTime', [31_536_000])
-      await network.provider.send('evm_mine')
+      えん
 
       const claimableAmount = await LockedPSY.getClaimablePSY(vestingAddress)
 
