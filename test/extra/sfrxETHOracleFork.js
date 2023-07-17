@@ -1,4 +1,4 @@
-const { expect } = require('hardhat')
+const { expect, ethers } = require('hardhat')
 
 describe('sfrxETHOracle: To do this test, change hardhat config to arbitrum fork network', function () {
     let sfrxETHOracle;
@@ -15,15 +15,12 @@ describe('sfrxETHOracle: To do this test, change hardhat config to arbitrum fork
         ;[Owner, Account1, Account2] = await ethers.getSigners()
 
         const sfrxETHOracleContract = await ethers.getContractFactory('sfrxETHOracle')
-        const chainlinkContract = await ethers.getContractFactory('ChainlinkOracle')
-        chainlink = await chainlinkContract.deploy()
-        await chainlink.setAddresses(weth, weth, chainlinkAddress)
         sfrxETHOracle = await sfrxETHOracleContract.deploy(
             frxETHWETH,
             weth,
             frxETH, 
             sfrxETH,
-            chainlink.address
+            chainlinkAddress
         )
 
         const SfrxETHOracleTestContract = await ethers.getContractFactory('SfrxETHOracleTest')
@@ -36,13 +33,21 @@ describe('sfrxETHOracle: To do this test, change hardhat config to arbitrum fork
             const result = await sampleOracle.priceRamses(weth, frxETHWETH)
             console.log(result.toString())
         })
+
+        it('WETH price in usd', async function () {
+            const result = await sampleOracle.getChainlinkPrice(chainlinkAddress)
+            console.log(result.toString())
+        })
     })
 
     describe('returns sfrxETH price', function () {
         
         it('When sfrxETH = frxETH', async function () {
-            await sfrxETHOracle.commitRate(frxETH, String(1e18))
-            await sfrxETHOracle.commitRate(sfrxETH, String(1e18))
+            const blockNumBefore = await ethers.provider.getBlockNumber();
+            const blockBefore = await ethers.provider.getBlock(blockNumBefore);
+            const time = blockBefore.timestamp;
+            await sfrxETHOracle.commitRate(frxETH, String(1e18), time)
+            await sfrxETHOracle.commitRate(sfrxETH, String(1e18), time)
             const result = await sfrxETHOracle.getDirectPrice()
             console.log(result.toString())
         })

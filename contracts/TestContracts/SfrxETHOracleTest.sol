@@ -8,6 +8,7 @@ import "../Dependencies/TickMath.sol";
 import "../Oracles/ConcentratedLiquidityBasePriceOracle.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 import "hardhat/console.sol";
 
 contract SfrxETHOracleTest is Ownable{
@@ -83,12 +84,12 @@ contract SfrxETHOracleTest is Ownable{
 		return _frxETHPriceUSD * _sfrxRates / TARGET_DECIMAL_1E18;
 	}
 
-	function isRateUpdateNeeded (address _token) external view returns (bool) {
+	function isRateUpdateNeeded (address _token, uint256 _price) external view returns (bool) {
 		require(assetStats[_token].checkFrequency > 0, "Invalid token address");
 		uint256 _updateTime = assetStats[_token].lastCheckTime +  assetStats[_token].checkFrequency; 
 		bool isPriceValid = true;
 		if(_token == frxETH){
-			isPriceValid = _validatePrice(frxETHPrice, assetStats[_token].lastRate);
+			isPriceValid = _validatePrice(_price, assetStats[_token].lastRate);
 		}
 		if(block.timestamp > _updateTime || !isPriceValid ){
 			return true;
@@ -110,11 +111,12 @@ contract SfrxETHOracleTest is Ownable{
 		return assetStats[_token].checkFrequency;
 	}
 	
-	function commitRate(address _token, uint256 _rates) external {
+	function commitRate(address _token, uint256 _rates, uint256 _time) external {
 		require(msg.sender == keeper, "Only keeper can commit rates");
 		require(assetStats[_token].checkFrequency > 0, "Invalid token address");
+		require(_time > assetStats[_token].lastCheckTime, "Time does not go back");
 		assetStats[_token].lastRate = _rates;
-		assetStats[_token].lastCheckTime = block.timestamp;
+		assetStats[_token].lastCheckTime = _time;
 	}
 
 	function getRate(address _token) external view returns (uint256) {
@@ -147,6 +149,11 @@ contract SfrxETHOracleTest is Ownable{
 	
 		return _tokenPriceScaled;
 
+	}
+
+	function getChainlinkPrice(AggregatorV3Interface _chainlink) public view returns (uint256) {
+		(, int256 _priceInt, , , ) = _chainlink.latestRoundData();
+		return uint256(_priceInt) * TARGET_DECIMAL_1E18 / 1e8;
 	}
 
 	function _validatePrice(uint256 _price, uint256 _anchorPrice) internal view returns (bool) {

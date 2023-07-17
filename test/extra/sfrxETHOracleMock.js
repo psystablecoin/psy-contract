@@ -1,4 +1,4 @@
-const { expect } = require('hardhat')
+const { expect, ethers } = require('hardhat')
 const { expectRevert } = require('@openzeppelin/test-helpers')
 
 describe('sfrxETHOracleMock', function () {
@@ -16,8 +16,8 @@ describe('sfrxETHOracleMock', function () {
 
     describe('defualt stats checkup', function () {
         it('sets default settings', async function () {
-            expect(await sampleOracle.isRateUpdateNeeded(frxETH.address)).to.equal(true)
-            expect(await sampleOracle.isRateUpdateNeeded(sfrxETH.address)).to.equal(true)
+            expect(await sampleOracle.isRateUpdateNeeded(frxETH.address, 1)).to.equal(true)
+            expect(await sampleOracle.isRateUpdateNeeded(sfrxETH.address, 1)).to.equal(true)
         })
     })
 
@@ -53,76 +53,88 @@ describe('sfrxETHOracleMock', function () {
         })
 
         it('only keeper can set rates', async function () {
-            await expectRevert.unspecified(sampleOracle.connect(Account1).commitRate(frxETH.address,String(1e17)))
+            let time = Math.floor(Date.now()/1000)
+            await expectRevert.unspecified(sampleOracle.connect(Account1).commitRate(frxETH.address, String(1e17), String(time)))
             await sampleOracle.setKeeper(Account1.address)
-            await sampleOracle.connect(Account1).commitRate(frxETH.address,String(1e18 - 1))
+            await sampleOracle.connect(Account1).commitRate(frxETH.address,String(1e18 - 1), String(time))
             const rate = await sampleOracle.getRate(frxETH.address)
             expect(rate.toString()).to.equal(String(1e18 - 1))
         })
 
         it('only registered tokens can have rates', async function () {
+            let time = Math.floor(Date.now()/1000)
             await sampleOracle.setKeeper(Account1.address)
-            await expectRevert.unspecified(sampleOracle.connect(Account1).commitRate(weth.address,String(1e17)))
+            await expectRevert.unspecified(sampleOracle.connect(Account1).commitRate(weth.address,String(1e17),String(time)))
         })
     })
     
     describe('sfrxETH Rate', function () {
         it('requires price update once time has passed', async function () {
-            expect(await sampleOracle.isRateUpdateNeeded(sfrxETH.address)).to.equal(true)
+            expect(await sampleOracle.isRateUpdateNeeded(sfrxETH.address, 1)).to.equal(true)
+            let time = Math.floor(Date.now()/1000)
             await sampleOracle.setKeeper(Account1.address)
-            await sampleOracle.connect(Account1).commitRate(sfrxETH.address,String(1e18))
-            expect(await sampleOracle.isRateUpdateNeeded(sfrxETH.address)).to.equal(false)
+            await sampleOracle.connect(Account1).commitRate(sfrxETH.address,String(1e18),time)
+            expect(await sampleOracle.isRateUpdateNeeded(sfrxETH.address, String(1e18))).to.equal(false)
             await network.provider.send('evm_increaseTime', [90000])  //24 hours + buffer
             await network.provider.send('evm_mine')
-            expect(await sampleOracle.isRateUpdateNeeded(sfrxETH.address)).to.equal(true)
+            expect(await sampleOracle.isRateUpdateNeeded(sfrxETH.address, String(1e18))).to.equal(true)
         })
     })
 
     describe('frxETH Rate', function () {
         it('requires price update once time has passed', async function () {
-            expect(await sampleOracle.isRateUpdateNeeded(frxETH.address)).to.equal(true)
+            expect(await sampleOracle.isRateUpdateNeeded(frxETH.address, 1)).to.equal(true)
             await sampleOracle.setKeeper(Account1.address)
-            await sampleOracle.connect(Account1).commitRate(frxETH.address,String(1e18))
-            expect(await sampleOracle.isRateUpdateNeeded(frxETH.address)).to.equal(false)
+            const blockNumBefore = await ethers.provider.getBlockNumber();
+            const blockBefore = await ethers.provider.getBlock(blockNumBefore);
+            const time = blockBefore.timestamp;
+            await sampleOracle.connect(Account1).commitRate(frxETH.address,String(1e18), time)
+            await sampleOracle.connect(Account1).commitRate(frxETH.address,String(1e18), time + 1)
+            expect(await sampleOracle.isRateUpdateNeeded(frxETH.address, String(1e18))).to.equal(false)
             await network.provider.send('evm_increaseTime', [700])  // less than 1 hours
             await network.provider.send('evm_mine')
-            expect(await sampleOracle.isRateUpdateNeeded(frxETH.address)).to.equal(false)
+            expect(await sampleOracle.isRateUpdateNeeded(frxETH.address, String(1e18))).to.equal(false)
             await network.provider.send('evm_increaseTime', [3000])  // less than 1 hours
             await network.provider.send('evm_mine')
-            expect(await sampleOracle.isRateUpdateNeeded(frxETH.address)).to.equal(true)
+            expect(await sampleOracle.isRateUpdateNeeded(frxETH.address, String(1e18))).to.equal(true)
         })
-        it('requires price update if deviation is larger than settings', async function () {
-            expect(await sampleOracle.isRateUpdateNeeded(frxETH.address)).to.equal(true)
+        it('requires price update if deviation is larger than the previous commit', async function () {
+            expect(await sampleOracle.isRateUpdateNeeded(frxETH.address, 1)).to.equal(true)
             await sampleOracle.setKeeper(Account1.address)
-            await sampleOracle.connect(Account1).commitRate(frxETH.address,String(1e18))
-            expect(await sampleOracle.isRateUpdateNeeded(frxETH.address)).to.equal(false)
-            await sampleOracle.connect(Account1).commitRate(frxETH.address,String(1e17))
-            expect(await sampleOracle.isRateUpdateNeeded(frxETH.address)).to.equal(true)
-            await sampleOracle.connect(Account1).commitRate(frxETH.address,String(1e19))
-            expect(await sampleOracle.isRateUpdateNeeded(frxETH.address)).to.equal(true)
-            await sampleOracle.connect(Account1).commitRate(frxETH.address,String(1e18))
-            await sampleOracle.connect(Account1).setFrxETHPrice(String(1e18 - 1e18 * 0.03))
-            expect(await sampleOracle.isRateUpdateNeeded(frxETH.address)).to.equal(false)
-            await sampleOracle.connect(Account1).setFrxETHPrice(String(1e18 + 1e18 * 0.03))
-            expect(await sampleOracle.isRateUpdateNeeded(frxETH.address)).to.equal(false)
+            const blockNumBefore = await ethers.provider.getBlockNumber();
+            const blockBefore = await ethers.provider.getBlock(blockNumBefore);
+            const time = blockBefore.timestamp;
+            await sampleOracle.connect(Account1).commitRate(frxETH.address,String(1e18), time)
+            await sampleOracle.connect(Account1).commitRate(frxETH.address,String(1e18), time + 1)
+            expect(await sampleOracle.isRateUpdateNeeded(frxETH.address, String(1e18))).to.equal(false)
+            expect(await sampleOracle.isRateUpdateNeeded(frxETH.address, String(1e19))).to.equal(true)
+            expect(await sampleOracle.isRateUpdateNeeded(frxETH.address, String(1e17))).to.equal(true)
+            expect(await sampleOracle.isRateUpdateNeeded(frxETH.address, String(1e18 + 1e18 * 0.03))).to.equal(false)
+            expect(await sampleOracle.isRateUpdateNeeded(frxETH.address, String(1e18 - 1e18 * 0.03))).to.equal(false)
         })
     })
 
     describe('getDirectPrice', function () {
         it('change the result if sfrxETH rate changed', async function () {
-            await sampleOracle.commitRate(frxETH.address, String(1e18))
-            await sampleOracle.commitRate(sfrxETH.address, String(1e18))
+            const blockNumBefore = await ethers.provider.getBlockNumber();
+            const blockBefore = await ethers.provider.getBlock(blockNumBefore);
+            const time = blockBefore.timestamp;
+            await sampleOracle.commitRate(frxETH.address, String(1e18),time)
+            await sampleOracle.commitRate(sfrxETH.address, String(1e18), time+1)
             const original = await sampleOracle.getDirectPrice()
-            await sampleOracle.commitRate(sfrxETH.address, String(1e18 * 0.97))
+            await sampleOracle.commitRate(sfrxETH.address, String(1e18 * 0.97),time + 2)
             const lower = await sampleOracle.getDirectPrice()
-            await sampleOracle.commitRate(sfrxETH.address, String(1e18 * 1.03))
+            await sampleOracle.commitRate(sfrxETH.address, String(1e18 * 1.03), time + 3)
             const upper = await sampleOracle.getDirectPrice()
             expect(lower.toString()).to.not.equal(original.toString())
             expect(upper.toString()).to.not.equal(original.toString())
         })
         it('change the result if frxETH rate changed', async function () {
-            await sampleOracle.commitRate(frxETH.address, String(1e18))
-            await sampleOracle.commitRate(sfrxETH.address, String(1e18))
+            const blockNumBefore = await ethers.provider.getBlockNumber();
+            const blockBefore = await ethers.provider.getBlock(blockNumBefore);
+            const time = blockBefore.timestamp;
+            await sampleOracle.commitRate(frxETH.address, String(1e18), time)
+            await sampleOracle.commitRate(sfrxETH.address, String(1e18), time + 1)
             const original = await sampleOracle.getDirectPrice()
             await sampleOracle.connect(Account1).setFrxETHPrice(String(1e18 - 1e18 * 0.03))
             const lower = await sampleOracle.getDirectPrice()
@@ -132,8 +144,11 @@ describe('sfrxETHOracleMock', function () {
             expect(upper.toString()).to.not.equal(original.toString())
         })
         it('change the result if weth price changed', async function () {
-            await sampleOracle.commitRate(frxETH.address, String(1e18))
-            await sampleOracle.commitRate(sfrxETH.address, String(1e18))
+            const blockNumBefore = await ethers.provider.getBlockNumber();
+            const blockBefore = await ethers.provider.getBlock(blockNumBefore);
+            const time = blockBefore.timestamp;
+            await sampleOracle.commitRate(frxETH.address, String(1e18), time)
+            await sampleOracle.commitRate(sfrxETH.address, String(1e18), time + 1)
             const original = await sampleOracle.getDirectPrice()
             await sampleOracle.connect(Account1).setWethPrice(String(1e18))
             const lower = await sampleOracle.getDirectPrice()
@@ -144,14 +159,17 @@ describe('sfrxETHOracleMock', function () {
             
         })
         it('reverts if frxETH prices on L1 and L2 deviate too much', async function () {
-            await sampleOracle.commitRate(sfrxETH.address, String(1e18))
-            await sampleOracle.commitRate(frxETH.address, String(1e18 * 0.99))
+            const blockNumBefore = await ethers.provider.getBlockNumber();
+            const blockBefore = await ethers.provider.getBlock(blockNumBefore);
+            const time = blockBefore.timestamp;
+            await sampleOracle.commitRate(sfrxETH.address, String(1e18), time)
+            await sampleOracle.commitRate(frxETH.address, String(1e18 * 0.99), time + 1)
             await sampleOracle.getDirectPrice()
-            await sampleOracle.commitRate(frxETH.address, String(1e18 * 0.95))
+            await sampleOracle.commitRate(frxETH.address, String(1e18 * 0.95), time + 2)
             await expectRevert.unspecified(sampleOracle.getDirectPrice())
-            await sampleOracle.commitRate(frxETH.address, String(1e18 * 1.01))
+            await sampleOracle.commitRate(frxETH.address, String(1e18 * 1.01), time + 3)
             await sampleOracle.getDirectPrice()
-            await sampleOracle.commitRate(frxETH.address, String(1e18 * 1.05))
+            await sampleOracle.commitRate(frxETH.address, String(1e18 * 1.05), time + 4)
             await expectRevert.unspecified(sampleOracle.getDirectPrice())
         })
     })

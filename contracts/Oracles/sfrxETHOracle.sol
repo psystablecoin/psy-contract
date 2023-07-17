@@ -5,6 +5,7 @@ import "../Interfaces/IRamsesPair.sol";
 import "../Interfaces/IOracle.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 
 contract sfrxETHOracle is IOracle, Ownable{
 
@@ -18,7 +19,7 @@ contract sfrxETHOracle is IOracle, Ownable{
 
 	uint256 public maxDeviationAllowance;
 
-	address public immutable chainlink;
+	AggregatorV3Interface public immutable chainlink;
 	address public immutable frxETHETH;
 	address public immutable weth;
 	address public immutable frxETH;
@@ -42,7 +43,7 @@ contract sfrxETHOracle is IOracle, Ownable{
 		weth = _weth;
 		frxETH = _frxETH;
 		frxETHETH = _frxETHWETH;
-		chainlink = _chainlink;
+		chainlink = AggregatorV3Interface(_chainlink);
 		sfrxETH = _sfrxETH;
 		keeper = msg.sender;
 		maxDeviationAllowance = 3e16; //3%
@@ -61,7 +62,7 @@ contract sfrxETHOracle is IOracle, Ownable{
 	* @return Price denominated in USDC
 	*/
 	function getDirectPrice() external view returns (uint256) {
-		uint256 _WETHUSDPrice = IOracle(chainlink).getDirectPrice();
+		uint256 _WETHUSDPrice = _getChainlinkPrice();
 		uint256 _frxETHPrice = priceRamses(weth, IRamsesPair(frxETHETH));
 		uint256 _frxETHAnchorPrice = assetStats[frxETH].lastRate;
 		uint256 _sfrxRates = assetStats[sfrxETH].lastRate;
@@ -78,7 +79,7 @@ contract sfrxETHOracle is IOracle, Ownable{
 	*/
 	function fetchPrice() external returns (uint256) {
 			
-		uint256 _WETHUSDPrice = IOracle(chainlink).fetchPrice();
+		uint256 _WETHUSDPrice = _getChainlinkPrice();
 		uint256 _frxETHPrice = priceRamses(weth, IRamsesPair(frxETHETH));
 		uint256 _frxETHAnchorPrice = assetStats[frxETH].lastRate;
 		uint256 _sfrxRates = assetStats[sfrxETH].lastRate;
@@ -90,12 +91,16 @@ contract sfrxETHOracle is IOracle, Ownable{
 
 	}
 
-	function isRateUpdateNeeded (address _token) external view returns (bool) {
+	/**
+	* @notice Return true if price update is needed
+	* @return true or false
+	*/
+	function isRateUpdateNeeded (address _token, uint256 _price) external view returns (bool) {
 		require(assetStats[_token].checkFrequency > 0, "Invalid token address");
 		uint256 _updateTime = assetStats[_token].lastCheckTime +  assetStats[_token].checkFrequency; 
 		bool isPriceValid = true;
 		if(_token == frxETH){
-			isPriceValid = _validatePrice(priceRamses(weth, IRamsesPair(frxETH)), assetStats[_token].lastRate);
+			isPriceValid = _validatePrice(_price, assetStats[_token].lastRate);
 		}
 		if(block.timestamp > _updateTime || !isPriceValid ){
 			return true;
@@ -117,11 +122,12 @@ contract sfrxETHOracle is IOracle, Ownable{
 		return assetStats[_token].checkFrequency;
 	}
 	
-	function commitRate(address _token, uint256 _rates) external {
+	function commitRate(address _token, uint256 _rates, uint256 _time) external {
 		require(msg.sender == keeper, "Only keeper can commit rates");
 		require(assetStats[_token].checkFrequency > 0, "Invalid token address");
+		require(_time > assetStats[_token].lastCheckTime, "Time does not go back");
 		assetStats[_token].lastRate = _rates;
-		assetStats[_token].lastCheckTime = block.timestamp;
+		assetStats[_token].lastCheckTime = _time;
 	}
 
 	function getRate(address _token) external view returns (uint256) {
@@ -167,7 +173,10 @@ contract sfrxETHOracle is IOracle, Ownable{
 			return _deviation <= _maxDeviation;
 		}
 	}
+
+	function _getChainlinkPrice() internal view returns (uint256) {
+		(, int256 _priceInt, , , ) = chainlink.latestRoundData();
+		return uint256(_priceInt) * TARGET_DECIMAL_1E18 / 1e8;
+	}
 	
-
-
 }
