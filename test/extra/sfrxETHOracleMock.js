@@ -109,8 +109,8 @@ describe('sfrxETHOracleMock', function () {
             expect(await sampleOracle.isRateUpdateNeeded(frxETH.address, String(1e18))).to.equal(false)
             expect(await sampleOracle.isRateUpdateNeeded(frxETH.address, String(1e19))).to.equal(true)
             expect(await sampleOracle.isRateUpdateNeeded(frxETH.address, String(1e17))).to.equal(true)
-            expect(await sampleOracle.isRateUpdateNeeded(frxETH.address, String(1e18 + 1e18 * 0.03))).to.equal(false)
-            expect(await sampleOracle.isRateUpdateNeeded(frxETH.address, String(1e18 - 1e18 * 0.03))).to.equal(false)
+            expect(await sampleOracle.isRateUpdateNeeded(frxETH.address, String(1e18 + 1e18 * 0.015))).to.equal(false)
+            expect(await sampleOracle.isRateUpdateNeeded(frxETH.address, String(1e18 - 1e18 * 0.015))).to.equal(false)
         })
     })
 

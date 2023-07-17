@@ -22,6 +22,7 @@ contract SfrxETHOracleTest is Ownable{
 	mapping(address => VolatilityStats) public assetStats;
 
 	uint256 public maxDeviationAllowance;
+	uint256 public maxDeviationForUpdate;
 
 	address public immutable weth;
 	address public immutable frxETH;
@@ -47,6 +48,7 @@ contract SfrxETHOracleTest is Ownable{
 		sfrxETH = _sfrxETH;
 		keeper = msg.sender;
 		maxDeviationAllowance = 3e16; //3%
+		maxDeviationForUpdate = 15e15; //1.5%
 
 		frxETHPrice = 1e18;
 		ethPrice = 2000e18;
@@ -78,7 +80,7 @@ contract SfrxETHOracleTest is Ownable{
 		uint256 _frxETHAnchorPrice = assetStats[frxETH].lastRate;
 		uint256 _sfrxRates = assetStats[sfrxETH].lastRate;
 
-		require(_validatePrice(_frxETHPrice, _frxETHAnchorPrice), "Price deviation too large");
+		require(_validatePrice(_frxETHPrice, _frxETHAnchorPrice, maxDeviationAllowance), "Price deviation too large");
 
 		uint256 _frxETHPriceUSD = _WETHUSDPrice * _frxETHPrice / TARGET_DECIMAL_1E18;
 		return _frxETHPriceUSD * _sfrxRates / TARGET_DECIMAL_1E18;
@@ -89,7 +91,7 @@ contract SfrxETHOracleTest is Ownable{
 		uint256 _updateTime = assetStats[_token].lastCheckTime +  assetStats[_token].checkFrequency; 
 		bool isPriceValid = true;
 		if(_token == frxETH){
-			isPriceValid = _validatePrice(_price, assetStats[_token].lastRate);
+			isPriceValid = _validatePrice(_price, assetStats[_token].lastRate, maxDeviationForUpdate);
 		}
 		if(block.timestamp > _updateTime || !isPriceValid ){
 			return true;
@@ -100,6 +102,10 @@ contract SfrxETHOracleTest is Ownable{
 
 	function setDeviationAlloance(uint256 _allowance) external onlyOwner {
 		maxDeviationAllowance = _allowance;
+	}
+
+	function setDeviationForUpdate(uint256 _deviation) external onlyOwner {
+		maxDeviationForUpdate = _deviation;
 	}
 	
 	function setCheckFrequency(address _token, uint256 _frequency) external onlyOwner {
@@ -152,13 +158,14 @@ contract SfrxETHOracleTest is Ownable{
 	}
 
 	function getChainlinkPrice(AggregatorV3Interface _chainlink) public view returns (uint256) {
-		(, int256 _priceInt, , , ) = _chainlink.latestRoundData();
+		(, int256 _priceInt, , uint256 _updatedAt, ) = _chainlink.latestRoundData();
+		require(_updatedAt > block.timestamp - 24 hours, "Chainlink price outdated");
 		return uint256(_priceInt) * TARGET_DECIMAL_1E18 / 1e8;
 	}
 
-	function _validatePrice(uint256 _price, uint256 _anchorPrice) internal view returns (bool) {
+	function _validatePrice(uint256 _price, uint256 _anchorPrice, uint256 _maxDeviationRate) internal pure returns (bool) {
 		require(_price > 0, "Price is zero");
-		uint256 _maxDeviation = _anchorPrice * maxDeviationAllowance / TARGET_DECIMAL_1E18;
+		uint256 _maxDeviation = _anchorPrice * _maxDeviationRate / TARGET_DECIMAL_1E18;
 		if(_price > _anchorPrice){
 			uint256 _deviation = _price - _anchorPrice;
 			return _deviation <= _maxDeviation;
