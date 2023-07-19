@@ -55,6 +55,7 @@ describe('sfrxETHOracleMock', function () {
         it('only keeper can set rates', async function () {
             let time = Math.floor(Date.now()/1000)
             await expectRevert.unspecified(sampleOracle.connect(Account1).commitRate(frxETH.address, String(1e17), String(time)))
+            await expectRevert.unspecified(sampleOracle.connect(Account1).commitRate(frxETH.address, String(1e17), String(time + 30)))
             await sampleOracle.setKeeper(Account1.address)
             await sampleOracle.connect(Account1).commitRate(frxETH.address,String(1e18 - 1), String(time))
             const rate = await sampleOracle.getRate(frxETH.address)
@@ -119,12 +120,12 @@ describe('sfrxETHOracleMock', function () {
             const blockNumBefore = await ethers.provider.getBlockNumber();
             const blockBefore = await ethers.provider.getBlock(blockNumBefore);
             const time = blockBefore.timestamp;
-            await sampleOracle.commitRate(frxETH.address, String(1e18),time)
-            await sampleOracle.commitRate(sfrxETH.address, String(1e18), time+1)
+            await sampleOracle.commitRate(frxETH.address, String(1e18), time)
+            await sampleOracle.commitRate(sfrxETH.address, String(1e18), time)
             const original = await sampleOracle.getDirectPrice()
-            await sampleOracle.commitRate(sfrxETH.address, String(1e18 * 0.97),time + 2)
+            await sampleOracle.commitRate(sfrxETH.address, String(1e18 * 0.97),time + 1)
             const lower = await sampleOracle.getDirectPrice()
-            await sampleOracle.commitRate(sfrxETH.address, String(1e18 * 1.03), time + 3)
+            await sampleOracle.commitRate(sfrxETH.address, String(1e18 * 1.03), time + 2)
             const upper = await sampleOracle.getDirectPrice()
             expect(lower.toString()).to.not.equal(original.toString())
             expect(upper.toString()).to.not.equal(original.toString())
@@ -171,6 +172,17 @@ describe('sfrxETHOracleMock', function () {
             await sampleOracle.getDirectPrice()
             await sampleOracle.commitRate(frxETH.address, String(1e18 * 1.05), time + 4)
             await expectRevert.unspecified(sampleOracle.getDirectPrice())
+        })
+        it('reverts if sfrxETH prices update is past', async function () {
+            const blockNumBefore = await ethers.provider.getBlockNumber();
+            const blockBefore = await ethers.provider.getBlock(blockNumBefore);
+            const time = blockBefore.timestamp;
+            await sampleOracle.commitRate(sfrxETH.address, String(1e18), time)
+            await sampleOracle.commitRate(frxETH.address, String(1e18 * 0.99), time + 1)
+            await sampleOracle.getDirectPrice()
+            await network.provider.send('evm_increaseTime', [86400 + 31 * 60])  // add 1 day + 31 min
+            await network.provider.send('evm_mine')
+            await expectRevert.unspecified(sampleOracle.getDirectPrice())        
         })
     })
 

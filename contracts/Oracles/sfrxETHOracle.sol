@@ -70,6 +70,8 @@ contract sfrxETHOracle is IOracle, Ownable{
 		uint256 _sfrxRates = assetStats[sfrxETH].lastRate;
 
 		require(_validatePrice(_frxETHPrice, _frxETHAnchorPrice, maxDeviationAllowance), "Price deviation too large");
+		require(block.timestamp - assetStats[sfrxETH].lastCheckTime < assetStats[sfrxETH].checkFrequency + 30 * 60
+		,"Price record is too old");
 
 		uint256 _frxETHPriceUSD = _WETHUSDPrice * _frxETHPrice / TARGET_DECIMAL_1E18;
 		return _frxETHPriceUSD * _sfrxRates / TARGET_DECIMAL_1E18;
@@ -87,6 +89,8 @@ contract sfrxETHOracle is IOracle, Ownable{
 		uint256 _sfrxRates = assetStats[sfrxETH].lastRate;
 
 		require(_validatePrice(_frxETHPrice, _frxETHAnchorPrice, maxDeviationAllowance), "Price deviation too large");
+	 	require(block.timestamp - assetStats[sfrxETH].lastCheckTime < assetStats[sfrxETH].checkFrequency + 30 * 60
+ 		,"Price record is too old");
 
 		uint256 _frxETHPriceUSD = _WETHUSDPrice * _frxETHPrice / TARGET_DECIMAL_1E18;
 		return _frxETHPriceUSD * _sfrxRates / TARGET_DECIMAL_1E18;
@@ -132,6 +136,7 @@ contract sfrxETHOracle is IOracle, Ownable{
 		require(msg.sender == keeper, "Only keeper can commit rates");
 		require(assetStats[_token].checkFrequency > 0, "Invalid token address");
 		require(_time > assetStats[_token].lastCheckTime, "Time does not go back");
+		require(_time < block.timestamp + 3, "Future time");
 		assetStats[_token].lastRate = _rates;
 		assetStats[_token].lastCheckTime = _time;
 	}
