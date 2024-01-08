@@ -19,6 +19,8 @@ import "./Dependencies/CheckContract.sol";
 import "./Dependencies/SafetyTransfer.sol";
 import "./Dependencies/Initializable.sol";
 
+//import 'hardhat/console.sol';
+
 
 contract BorrowerOperations is PSYBase, CheckContract, IBorrowerOperations, IERC3156FlashLender, Initializable {
 	using SafeMath for uint256;
@@ -191,7 +193,6 @@ contract BorrowerOperations is PSYBase, CheckContract, IBorrowerOperations, IERC
 
 		_tokenAmount = getMethodValue(vars.asset, _tokenAmount, false);
 		vars.price = psyParams.priceFeed().fetchPrice(vars.asset);
-
 		bool isRecoveryMode = _checkRecoveryMode(vars.asset, vars.price);
 
 		_requireValidMaxFeePercentage(vars.asset, _maxFeePercentage, isRecoveryMode);
@@ -805,6 +806,11 @@ contract BorrowerOperations is PSYBase, CheckContract, IBorrowerOperations, IERC
 		uint256 _SLSDamount,
 		uint256 _netDebtIncrease
 	) internal {
+		uint256 newTotalAssetDebt = _activePool.getSLSDDebt(_asset) +
+			IDefaultPool(psyParams.defaultPool()).getSLSDDebt(_asset) +
+			_netDebtIncrease;
+		//console.log('debt ceiling:' , newTotalAssetDebt,psyParams.DEBT_CEILINGS(_asset));
+		require(newTotalAssetDebt <= psyParams.DEBT_CEILINGS(_asset), "Exceeds Debt Ceiling");
 		_activePool.increaseSLSDDebt(_asset, _netDebtIncrease);
 		_SLSDToken.mint(_asset, _account, _SLSDamount);
 	}

@@ -97,7 +97,8 @@ contract('Deploy and operation tests when PSY token is launched later', async (a
       erc20 = contracts.erc20
 
       stabilityPoolManager = contracts.stabilityPoolManager
-
+    
+      console.log('a')
       await psyParams.sanitizeParameters(ZERO_ADDRESS)
       await psyParams.sanitizeParameters(erc20.address)
 
@@ -109,6 +110,10 @@ contract('Deploy and operation tests when PSY token is launched later', async (a
       MIN_NET_DEBT_ERC20 = await psyParams.MIN_NET_DEBT(erc20.address)
       BORROWING_FEE_FLOOR_ERC20 = await psyParams.BORROWING_FEE_FLOOR(erc20.address)
       
+      
+      console.log(await psyParams.DEBT_CEILINGS(erc20.address))
+      console.log(await psyParams.MIN_NET_DEBT(erc20.address))
+
       let index = 0
       for (const acc of accounts) {
         await psyToken.approve(psyStaking.address, await web3.eth.getBalance(acc), { from: acc })
@@ -133,6 +138,8 @@ contract('Deploy and operation tests when PSY token is launched later', async (a
     })
     
     it('BorrowerOperations.openTrove(): it will trnasfer borrowing fee to treasury when PSY not deployed yet', async () => {
+        
+        
         const treasuryBalanceBefore = await slsdToken.balanceOf(treasury)
         assert.isTrue(treasuryBalanceBefore.eq(toBN('0')))
         
@@ -763,7 +770,8 @@ contract('Deploy and operation tests when PSY token is launched later', async (a
             200,
             50,
             500,
-            50
+            50,
+            dec(100000, 18)
         )
     
         await contracts.psyParameters.setCollateralParameters(
@@ -775,7 +783,8 @@ contract('Deploy and operation tests when PSY token is launched later', async (a
             200,
             50,
             500,
-            50
+            50,
+            dec(100000, 18)
         ) 
 
         // reflect PSY configuration to pool
