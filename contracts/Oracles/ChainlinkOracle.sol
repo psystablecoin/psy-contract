@@ -104,7 +104,7 @@ contract ChainlinkOracle is Ownable, CheckContract, BaseMath, IOracle {
 	}
 
 
-	function getDirectPrice() external view returns (uint256 _priceAssetInSLSD) {
+	function getDirectPrice() external view returns (uint256 _priceAssetInUSD) {
 		
 		(
 			ChainlinkResponse memory chainlinkResponse,
@@ -116,7 +116,7 @@ contract ChainlinkOracle is Ownable, CheckContract, BaseMath, IOracle {
 			chainlinkResponse.decimals
 		);
 
-		_priceAssetInSLSD = scaledChainlinkPrice;
+		_priceAssetInUSD = scaledChainlinkPrice;
 	}
 
 	function fetchPrice() external override returns (uint256) {

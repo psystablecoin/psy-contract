@@ -2,16 +2,12 @@
 pragma solidity >=0.8.0;
 
 import "../Interfaces/IRamsesPair.sol";
-import "../Interfaces/IUniswapV3Pool.sol";
 import "../Interfaces/IOracle.sol";
-import "../Dependencies/TickMath.sol";
-import "../Oracles/ConcentratedLiquidityBasePriceOracle.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
-import "hardhat/console.sol";
 
-contract SfrxETHOracleTest is Ownable{
+contract sfrxETHOracle is IOracle, Ownable{
 
 	struct VolatilityStats {
 		uint256 lastRate;
@@ -24,34 +20,35 @@ contract SfrxETHOracleTest is Ownable{
 	uint256 public maxDeviationAllowance;
 	uint256 public maxDeviationForUpdate;
 
+	AggregatorV3Interface public immutable chainlink;
+	address public immutable frxETHETH;
 	address public immutable weth;
 	address public immutable frxETH;
 	address public immutable sfrxETH;
 	address public keeper;
 
-	//only for test
-	uint256 public frxETHPrice;
-	uint256 public ethPrice;
-
-	// Use to convert a price answer to an 18-digit precision uint256
+	// Use to convert a price answer to an 18-digit precision uint
 	uint256 public constant TARGET_DECIMAL_1E18 = 1e18;
 
 	constructor(
+		address _frxETHWETH,
 		address _weth,
 		address _frxETH,
-		address _sfrxETH
+		address _sfrxETH,
+		address _chainlink
 	) {
+		require(_frxETHWETH != address(0), "Invalid frxETHETH address");
 		require(_weth != address(0), "Invalid weth address");
-				
+		require(_chainlink != address(0), "Invalid chainlink address");
+		
 		weth = _weth;
 		frxETH = _frxETH;
+		frxETHETH = _frxETHWETH;
+		chainlink = AggregatorV3Interface(_chainlink);
 		sfrxETH = _sfrxETH;
 		keeper = msg.sender;
 		maxDeviationAllowance = 3e16; //3%
 		maxDeviationForUpdate = 15e15; //1.5%
-
-		frxETHPrice = 1e18;
-		ethPrice = 2000e18;
 
 		assetStats[frxETH].checkFrequency = 3600; // 1 hour
 		assetStats[sfrxETH].checkFrequency = 1 days;
@@ -62,32 +59,48 @@ contract SfrxETHOracleTest is Ownable{
 		keeper = _keeper;
 	}
 
-	function setWethPrice(uint256 _price) external {
-		ethPrice = _price;
-	}
-
-	function setFrxETHPrice(uint256 _price) external {
-		frxETHPrice = _price;
-	}
-
 	/**
 	* @notice Get the token price price for an underlying token address.
 	* @return Price denominated in USDC
 	*/
 	function getDirectPrice() external view returns (uint256) {
-		uint256 _WETHUSDPrice = ethPrice;
-		uint256 _frxETHPrice = frxETHPrice;
+		uint256 _WETHUSDPrice = _getChainlinkPrice();
+		uint256 _frxETHPrice = priceRamses(weth, IRamsesPair(frxETHETH));
 		uint256 _frxETHAnchorPrice = assetStats[frxETH].lastRate;
 		uint256 _sfrxRates = assetStats[sfrxETH].lastRate;
 
 		require(_validatePrice(_frxETHPrice, _frxETHAnchorPrice, maxDeviationAllowance), "Price deviation too large");
- 		require(block.timestamp - assetStats[sfrxETH].lastCheckTime < assetStats[sfrxETH].checkFrequency + 30 * 60
- 		,"Price record is too old");
+		require(block.timestamp - assetStats[sfrxETH].lastCheckTime < assetStats[sfrxETH].checkFrequency + 30 * 60
+		,"Price record is too old");
 
 		uint256 _frxETHPriceUSD = _WETHUSDPrice * _frxETHPrice / TARGET_DECIMAL_1E18;
 		return _frxETHPriceUSD * _sfrxRates / TARGET_DECIMAL_1E18;
 	}
 
+	/**
+	* @notice Get and Update the token price price for an underlying token address.
+	* @return Price denominated in　USDC
+	*/
+	function fetchPrice() external returns (uint256) {
+			
+		uint256 _WETHUSDPrice = _getChainlinkPrice();
+		uint256 _frxETHPrice = priceRamses(weth, IRamsesPair(frxETHETH));
+		uint256 _frxETHAnchorPrice = assetStats[frxETH].lastRate;
+		uint256 _sfrxRates = assetStats[sfrxETH].lastRate;
+
+		require(_validatePrice(_frxETHPrice, _frxETHAnchorPrice, maxDeviationAllowance), "Price deviation too large");
+	 	require(block.timestamp - assetStats[sfrxETH].lastCheckTime < assetStats[sfrxETH].checkFrequency + 30 * 60
+ 		,"Price record is too old");
+
+		uint256 _frxETHPriceUSD = _WETHUSDPrice * _frxETHPrice / TARGET_DECIMAL_1E18;
+		return _frxETHPriceUSD * _sfrxRates / TARGET_DECIMAL_1E18;
+
+	}
+
+	/**
+	* @notice Return true if price update is needed
+	* @return true or false
+	*/
 	function isRateUpdateNeeded (address _token, uint256 _price) external view returns (bool) {
 		require(assetStats[_token].checkFrequency > 0, "Invalid token address");
 		uint256 _updateTime = assetStats[_token].lastCheckTime +  assetStats[_token].checkFrequency; 
@@ -160,12 +173,6 @@ contract SfrxETHOracleTest is Ownable{
 
 	}
 
-	function getChainlinkPrice(AggregatorV3Interface _chainlink) public view returns (uint256) {
-		(, int256 _priceInt, , uint256 _updatedAt, ) = _chainlink.latestRoundData();
-		require(_updatedAt > block.timestamp - 24 hours, "Chainlink price outdated");
-		return uint256(_priceInt) * TARGET_DECIMAL_1E18 / 1e8;
-	}
-
 	function _validatePrice(uint256 _price, uint256 _anchorPrice, uint256 _maxDeviationRate) internal pure returns (bool) {
 		require(_price > 0, "Price is zero");
 		uint256 _maxDeviation = _anchorPrice * _maxDeviationRate / TARGET_DECIMAL_1E18;
@@ -176,6 +183,12 @@ contract SfrxETHOracleTest is Ownable{
 			uint256 _deviation = _anchorPrice - _price;
 			return _deviation <= _maxDeviation;
 		}
+	}
+
+	function _getChainlinkPrice() internal view returns (uint256) {
+		(, int256 _priceInt, , uint256 _updatedAt, ) = chainlink.latestRoundData();
+		require(_updatedAt > block.timestamp - 24 hours, "Chainlink price outdated");
+		return uint256(_priceInt) * TARGET_DECIMAL_1E18 / 1e8;
 	}
 	
 }

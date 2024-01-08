@@ -15,6 +15,7 @@ interface IPSYParameters {
 
 	event MCRChanged(uint256 oldMCR, uint256 newMCR);
 	event CCRChanged(uint256 oldCCR, uint256 newCCR);
+	event DebtCeilingChanged(uint256 oldLimit, uint256 newLimit);
 	event GasCompensationChanged(uint256 oldGasComp, uint256 newGasComp);
 	event MinNetDebtChanged(uint256 oldMinNet, uint256 newMinNet);
 	event PercentDivisorChanged(uint256 oldPercentDiv, uint256 newPercentDiv);
@@ -42,6 +43,8 @@ interface IPSYParameters {
 	function CCR(address _collateral) external view returns (uint256);
 
 	function SLSD_GAS_COMPENSATION(address _collateral) external view returns (uint256);
+
+	function DEBT_CEILINGS(address _collateral) external view returns (uint256);
 
 	function MIN_NET_DEBT(address _collateral) external view returns (uint256);
 
@@ -71,6 +74,8 @@ interface IPSYParameters {
 	) external;
 
 	function setPriceFeed(address _priceFeed) external;
+
+	function setDebtCeiling(address _asset, uint256 newLimit) external;
 
 	function setMCR(address _asset, uint256 newMCR) external;
 

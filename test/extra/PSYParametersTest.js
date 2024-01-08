@@ -25,6 +25,7 @@ contract('PSYParameters', async (accounts) => {
   let BORROWING_FEE_FLOOR
   let MAX_BORROWING_FEE
   let REDEMPTION_FEE_FLOOR
+  let DEBT_CEIL = dec("1000000000000000000000", 18)
 
   const MCR_SAFETY_MAX = toBN(dec(1000, 18)).div(toBN(100))
   const MCR_SAFETY_MIN = toBN(dec(101, 18)).div(toBN(100))
@@ -97,7 +98,7 @@ contract('PSYParameters', async (accounts) => {
       await psyParameters.setPercentDivisor(ZERO_ADDRESS, 100)
       await psyParameters.setBorrowingFeeFloor(ZERO_ADDRESS, 50)
       await psyParameters.setMaxBorrowingFee(ZERO_ADDRESS, 500)
-      await psyParameters.setSLSDGasCompensation(ZERO_ADDRESS, dec(200, 18))
+      await psyParameters.setSLSDGasCompensation(ZERO_ADDRESS, dec(20, 18))
       await psyParameters.setMinNetDebt(ZERO_ADDRESS, dec(2000, 18))
       await psyParameters.setRedemptionFeeFloor(ZERO_ADDRESS, 50)
 
@@ -105,8 +106,8 @@ contract('PSYParameters', async (accounts) => {
       assert.equal((await psyParameters.CCR(ZERO_ADDRESS)).toString(), CCR)
       assert.equal((await psyParameters.PERCENT_DIVISOR(ZERO_ADDRESS)).toString(), PERCENT_DIVISOR)
       assert.equal((await psyParameters.BORROWING_FEE_FLOOR(ZERO_ADDRESS)).toString(), BORROWING_FEE_FLOOR)
-      assert.equal((await psyParameters.MAX_BORROWING_FEE(ZERO_ADDRESS)).toString(), MAX_BORROWING_FEE)
-      assert.equal((await psyParameters.SLSD_GAS_COMPENSATION(ZERO_ADDRESS)).toString(), GAS_COMPENSATION)
+      assert.equal((await psyParameters.MAX_BORROWING_FEE(ZERO_ADDRESS)).toString(), MAX_BORROWING_FEE.toString())
+      assert.equal((await psyParameters.SLSD_GAS_COMPENSATION(ZERO_ADDRESS)).toString(), GAS_COMPENSATION.toString())
       assert.equal((await psyParameters.MIN_NET_DEBT(ZERO_ADDRESS)).toString(), MIN_NET_DEBT)
       assert.equal(
         (await psyParameters.REDEMPTION_FEE_FLOOR(ZERO_ADDRESS)).toString(),
@@ -128,6 +129,7 @@ contract('PSYParameters', async (accounts) => {
           BORROWING_FEE_FLOOR,
           MAX_BORROWING_FEE,
           REDEMPTION_FEE_FLOOR,
+          DEBT_CEIL,
           { from: user }
         )
       )
@@ -187,6 +189,7 @@ contract('PSYParameters', async (accounts) => {
         newBorrowingFeeFloor,
         newMaxBorrowingFee,
         newRedemptionFeeFloor,
+        DEBT_CEIL,
         { from: owner }
       )
 
@@ -362,6 +365,11 @@ contract('PSYParameters', async (accounts) => {
       assert.equal(expectedMax.toString(), await psyParameters.MAX_BORROWING_FEE(ZERO_ADDRESS))
     })
 
+    it('setDebtCeiling: Owner change parameter - Valid Check', async () => {
+      await psyParameters.setDebtCeiling(ZERO_ADDRESS, 1)
+      assert.equal(toBN(1).toString(), await psyParameters.DEBT_CEILINGS(ZERO_ADDRESS))
+    })
+
     /*
     floor is now zero
     it('setRedemptionFeeFloor: Owner change parameter - Failing SafeCheck', async () => {
@@ -400,7 +408,8 @@ contract('PSYParameters', async (accounts) => {
           PERCENT_DIVISOR,
           BORROWING_FEE_FLOOR,
           MAX_BORROWING_FEE,
-          REDEMPTION_FEE_FLOOR
+          REDEMPTION_FEE_FLOOR,
+          DEBT_CEIL
         )
       )
 
@@ -414,7 +423,8 @@ contract('PSYParameters', async (accounts) => {
           PERCENT_DIVISOR,
           BORROWING_FEE_FLOOR,
           MAX_BORROWING_FEE,
-          REDEMPTION_FEE_FLOOR
+          REDEMPTION_FEE_FLOOR,
+          DEBT_CEIL
         )
       )
 
@@ -428,7 +438,8 @@ contract('PSYParameters', async (accounts) => {
           PERCENT_DIVISOR,
           BORROWING_FEE_FLOOR,
           MAX_BORROWING_FEE,
-          REDEMPTION_FEE_FLOOR
+          REDEMPTION_FEE_FLOOR,
+          DEBT_CEIL
         )
       )
 
@@ -442,7 +453,8 @@ contract('PSYParameters', async (accounts) => {
           PERCENT_DIVISOR,
           BORROWING_FEE_FLOOR,
           MAX_BORROWING_FEE,
-          REDEMPTION_FEE_FLOOR
+          REDEMPTION_FEE_FLOOR,
+          DEBT_CEIL
         )
       )
 
@@ -456,7 +468,8 @@ contract('PSYParameters', async (accounts) => {
           PERCENT_DIVISOR_SAFETY_MAX.add(toBN(1)),
           BORROWING_FEE_FLOOR,
           MAX_BORROWING_FEE,
-          REDEMPTION_FEE_FLOOR
+          REDEMPTION_FEE_FLOOR,
+          DEBT_CEIL
         )
       )
 
@@ -470,7 +483,8 @@ contract('PSYParameters', async (accounts) => {
           PERCENT_DIVISOR,
           BORROWING_FEE_FLOOR_SAFETY_MAX.add(toBN(1)),
           MAX_BORROWING_FEE,
-          REDEMPTION_FEE_FLOOR
+          REDEMPTION_FEE_FLOOR,
+          DEBT_CEIL
         )
       )
 
@@ -484,7 +498,8 @@ contract('PSYParameters', async (accounts) => {
           PERCENT_DIVISOR,
           BORROWING_FEE_FLOOR,
           MAX_BORROWING_FEE_SAFETY_MAX.add(toBN(1)),
-          REDEMPTION_FEE_FLOOR
+          REDEMPTION_FEE_FLOOR,
+          DEBT_CEIL
         )
       )
 
@@ -498,7 +513,8 @@ contract('PSYParameters', async (accounts) => {
           PERCENT_DIVISOR,
           BORROWING_FEE_FLOOR,
           MAX_BORROWING_FEE,
-          REDEMPTION_FEE_FLOOR_SAFETY_MAX.add(toBN(1))
+          REDEMPTION_FEE_FLOOR_SAFETY_MAX.add(toBN(1)),
+          DEBT_CEIL
         )
       )
     })
@@ -527,6 +543,7 @@ contract('PSYParameters', async (accounts) => {
         newBorrowingFeeFloor,
         newMaxBorrowingFee,
         newRedemptionFeeFloor,
+        DEBT_CEIL,
         { from: owner }
       )
 
@@ -592,6 +609,20 @@ contract('PSYParameters', async (accounts) => {
         ICR: toBN(dec(2, 18)),
         extraParams: { from: A },
       })
+      
+      //change Debt ceiling
+      await psyParameters.setDebtCeiling(erc20.address, 1)
+      await assertRevert(
+        openTrove({
+          asset: erc20.address,
+          extraSLSDAmount: toBN(dec(5000, 18)),
+          ICR: toBN(dec(2, 18)),
+          extraParams: { from: B },
+        }), 
+      'Exceeds Debt Ceiling')
+
+      //restore Debt ceiling
+      await psyParameters.setDebtCeiling(erc20.address, dec(1000000000, 18))
       await openTrove({
         asset: erc20.address,
         extraSLSDAmount: toBN(dec(5000, 18)),

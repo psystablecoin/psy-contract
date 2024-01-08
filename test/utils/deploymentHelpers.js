@@ -278,6 +278,7 @@ class DeploymentHelper {
       50,
       500,
       50,
+      dec(100000, 18)
     )
 
     await contracts.psyParameters.setCollateralParameters(
@@ -290,6 +291,7 @@ class DeploymentHelper {
       50,
       500,
       50,
+      dec(100000, 18)
     )
 
   }
@@ -487,7 +489,8 @@ class DeploymentHelper {
       200,
       50,
       500,
-      50
+      50,
+      dec("1000000000000000000000", 18)
     )
 
     await coreContracts.psyParameters.setCollateralParameters(
@@ -499,7 +502,8 @@ class DeploymentHelper {
       200,
       50,
       500,
-      50
+      50,
+      dec("1000000000000000000000", 18)
     )
   }
 }

@@ -15,6 +15,7 @@ contract PriceFeedTestnet is Ownable, IPriceFeed {
 
 	uint256 private _price = 200 ether;
 	uint256 private _index = 1 ether;
+	mapping(address => uint256) _assetPrice;
 
 	struct MockOracleData {
 		address oracle;
@@ -37,11 +38,14 @@ contract PriceFeedTestnet is Ownable, IPriceFeed {
 	function fetchPrice(address _asset) external override returns (uint256) {
 		// Fire an event just like the mainnet version would.
 		// This lets the subgraph rely on events to get the latest price even when developing locally.
-		
-		return _price;
+		if(_assetPrice[_asset ] > 0){
+			return _assetPrice[_asset];
+		}else{
+			return _price;
+		}
 	}
 
-		function getPrice() external view returns (uint256) {
+	function getPrice() external view returns (uint256) {
 		// Fire an event just like the mainnet version would.
 		// This lets the subgraph rely on events to get the latest price even when developing locally.
 		
@@ -51,13 +55,21 @@ contract PriceFeedTestnet is Ownable, IPriceFeed {
 	function getDirectPrice(address _asset) external view override returns (uint256) {
 		// Fire an event just like the mainnet version would.
 		// This lets the subgraph rely on events to get the latest price even when developing locally.
-		
-		return _price;
+		if(_assetPrice[_asset ] > 0){
+			return _assetPrice[_asset];
+		}else{
+			return _price;
+		}
 	}
 
 	// Manual external price setter.
 	function setPrice(uint256 price) external returns (bool) {
 		_price = price;
+		return true;
+	}
+
+	function setAssetPrice(address _asset, uint256 _price) external returns (bool) {
+		_assetPrice[_asset] = _price;
 		return true;
 	}
 

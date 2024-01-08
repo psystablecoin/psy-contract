@@ -17,12 +17,13 @@ contract PSYParameters is IPSYParameters, Ownable, CheckContract, Initializable 
 
 	uint256 public constant MCR_DEFAULT = 1100000000000000000; // 110%
 	uint256 public constant CCR_DEFAULT = 1500000000000000000; // 150%
+	uint256 public constant CEIL_DEFAULT = 1000000000000000000000 ether; // (Must be ~100K for production)
 	uint256 public constant PERCENT_DIVISOR_DEFAULT = 100; // dividing by 100 yields 1%
 
 	uint256 public constant BORROWING_FEE_FLOOR_DEFAULT = (DECIMAL_PRECISION / 1000) * 5; // 0.5%
 	uint256 public constant MAX_BORROWING_FEE_DEFAULT = (DECIMAL_PRECISION / 100) * 5; // 5%
 
-	uint256 public constant SLSD_GAS_COMPENSATION_DEFAULT = 200 ether;
+	uint256 public constant SLSD_GAS_COMPENSATION_DEFAULT = 20 ether;
 	uint256 public constant MIN_NET_DEBT_DEFAULT = 2000 ether;
 	uint256 public constant REDEMPTION_FEE_FLOOR_DEFAULT = (DECIMAL_PRECISION / 1000) * 5; // 0.5%
 
@@ -33,6 +34,7 @@ contract PSYParameters is IPSYParameters, Ownable, CheckContract, Initializable 
 
 	mapping(address => uint256) public override SLSD_GAS_COMPENSATION; // Amount of SLSD to be locked in gas pool on opening troves
 	mapping(address => uint256) public override MIN_NET_DEBT; // Minimum amount of net SLSD debt a trove must have
+	mapping(address => uint256) public override DEBT_CEILINGS; // Maximum amount of net SLSD debt for an asset
 	mapping(address => uint256) public override PERCENT_DIVISOR; // dividing by 200 yields 0.5%
 	mapping(address => uint256) public override BORROWING_FEE_FLOOR;
 	mapping(address => uint256) public override REDEMPTION_FEE_FLOOR;
@@ -124,6 +126,7 @@ contract PSYParameters is IPSYParameters, Ownable, CheckContract, Initializable 
 		MAX_BORROWING_FEE[_asset] = MAX_BORROWING_FEE_DEFAULT;
 		MAX_REDEMPTION_FEE[_asset] = DECIMAL_PRECISION;
 		REDEMPTION_FEE_FLOOR[_asset] = REDEMPTION_FEE_FLOOR_DEFAULT;
+		DEBT_CEILINGS[_asset] = CEIL_DEFAULT;
 	}
 
 	function setCollateralParameters(
@@ -135,7 +138,8 @@ contract PSYParameters is IPSYParameters, Ownable, CheckContract, Initializable 
 		uint256 precentDivisor,
 		uint256 borrowingFeeFloor,
 		uint256 maxBorrowingFee,
-		uint256 redemptionFeeFloor
+		uint256 redemptionFeeFloor,
+		uint256 debtCeiling
 	) external onlyOwner {
 		hasCollateralConfigured[_asset] = true;
 
@@ -148,6 +152,18 @@ contract PSYParameters is IPSYParameters, Ownable, CheckContract, Initializable 
 		setBorrowingFeeFloor(_asset, borrowingFeeFloor);
 		setMaxRedemptionFee(_asset, 10000);
 		setRedemptionFeeFloor(_asset, redemptionFeeFloor);
+		setDebtCeiling(_asset, debtCeiling);
+	}
+
+	function setDebtCeiling(address _asset, uint256 newLimit)
+		public
+		override
+		onlyOwner
+	{
+		uint256 oldLimit = DEBT_CEILINGS[_asset];
+		DEBT_CEILINGS[_asset] = newLimit;
+
+		emit DebtCeilingChanged(oldLimit, newLimit);
 	}
 
 	function setMCR(address _asset, uint256 newMCR)
